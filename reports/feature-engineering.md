@@ -37,6 +37,18 @@ gradient du DEM (76 m/px).
 le relief (corrélée à la pente) et le DEM à 76 m lisse la micro-pente.
 → **Conclusion : neutres, on ne les exploite pas.**
 
+### Round « littérature » (pluie/événements/tendance)
+D'après la littérature (Kauserud 2008, Andrew 2018, Guo 2025) : pluies antécédentes =
+déclencheur n°1, baisse de température = déclencheur d'automne, humidité du sol = moteur
+principal. On a testé : `pluie_max_J14`, `jours_depuis_grosse_pluie`, `gel_J14`,
+`tendance_temp` (pente de température sur 30 j), `bilan_hydrique_J120`.
+→ **Seule `tendance_temp` apporte** (SHAP top 5, girolle +0.012). Les 4 autres sont
+redondantes (pluie_max ~ precip, −0.62) ou quasi constantes (gel ≈ 0) → **écartées**.
+→ La **morille** régresse (−0.07) : son déclencheur printanier est le **réchauffement du
+sol**, qu'on n'a pas (`soil_temperature` horaire → écarté, remplacé par le bilan hydrique).
+→ **Plateau atteint** : le signal principal (précipitations + bilan hydrique + dynamique
+thermique) est capturé.
+
 ## 2. Regroupement d'espèces (augmentation de données)
 
 ### Méthode : 3 critères avant de regrouper
