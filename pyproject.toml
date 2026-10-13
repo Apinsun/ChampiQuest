@@ -1,0 +1,31 @@
+[project]
+name = "champiquest"
+version = "0.1.0"
+description = "Prédiction de pousse de champignons en Alsace (météo → fructification) et reconnaissance d'espèce par image."
+requires-python = ">=3.12,<3.13"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "champiquest", from = "src" }]
+
+[tool.poetry.dependencies]
+jupyter = "^1.1.1"
+pandas = "<3.0"
+numpy = "<2.6"
+matplotlib = "<3.12"
+seaborn = "^0.13.2"
+folium = "^0.20.0"
+pygbif = "^0.7.0"
+openmeteo-requests = "^1.7.5"
+requests-cache = "^1.3.3"
+retry-requests = "^2.0.0"
+tqdm = "^4.70.1"
+geopandas = "^1.2.0"
+shapely = "^2.2.0"
+rasterio = "^1.5.2"
+rioxarray = "^0.23.0"
+fg-data-profiling = "^4.20.0"
+pyyaml = "^6.0.3"

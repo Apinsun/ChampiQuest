@@ -1,0 +1,68 @@
+# ============================================================================
+# ChampiQuest — Espèces étudiées & paramètres d'acquisition
+# ============================================================================
+# Source de vérité lue par les scripts d'ingestion (src/champiquest/data/).
+# Chaque section est commentée pour expliquer à quoi sert chaque valeur.
+# ----------------------------------------------------------------------------
+
+# ---- Zone géographique : Alsace --------------------------------------------
+# Rectangle englobant (bounding box) exprimé en degrés décimaux.
+# L'Alsace s'étend grosso modo de 47.4° à 49.0° de latitude
+# et de 6.8° à 8.3° de longitude.
+# min_* / max_* : bornes inférieures et supérieures de la zone.
+bbox:
+  min_lat: 47.4
+  max_lat: 49.0
+  min_lon: 6.8
+  max_lon: 8.3
+
+# ---- Plage d'années d'observation ------------------------------------------
+# start : on commence en 1950 car c'est la limite de fiabilité des
+#         réanalyses météo ERA5 (source Open-Meteo).
+# end   : null = "jusqu'à aujourd'hui" (le script remplace null par
+#         l'année courante). Pas de borne haute : l'EDA affinera.
+year_range:
+  start: 1950
+  end: null
+
+# ---- Espèces étudiées ------------------------------------------------------
+# Liste des espèces à récupérer. Pour chaque espèce :
+#   - key        : identifiant interne (slug) utilisé pour les noms de
+#                  fichiers CSV et, plus tard, l'API.
+#   - scientific : nom scientifique de référence (tel que renvoyé par GBIF).
+#   - gbif_key   : taxonKey GBIF courant (usageKey), obtenu via
+#                  https://api.gbif.org/v1/species/match?name=... .
+#   - season     : saison de fructification (indicatif, pour l'EDA ;
+#                  les fenêtres exactes seront calculées depuis les données).
+#   - habitat    : milieu de croissance (indicatif, pour l'EDA et la
+#                  vérification des pseudo-absences).
+species:
+  - key: "boletus_edulis"
+    scientific: "Boletus edulis"
+    gbif_key: 5954958
+    season: "automne"
+    habitat: "forêt"
+
+  - key: "imleria_badia"
+    scientific: "Imleria badia"
+    gbif_key: 7832732
+    season: "automne"
+    habitat: "forêt"
+
+  - key: "cantharellus_cibarius"
+    scientific: "Cantharellus cibarius"
+    gbif_key: 5249504
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "macrolepiota_procera"
+    scientific: "Macrolepiota procera"
+    gbif_key: 8914748
+    season: "été-automne"
+    habitat: "prairie / lisière"
+
+  - key: "morchella_esculenta"
+    scientific: "Morchella esculenta"
+    gbif_key: 2594602
+    season: "printemps"
+    habitat: "forêt / verger"

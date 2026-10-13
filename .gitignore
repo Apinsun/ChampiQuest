@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+
+# Outils
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Données & modèles (volumineux / régénérés — voir AGENTS.md et reports/)
+data/
+mlruns/
+models/
+
+# Secrets
+.env
+
+# OS
+.DS_Store
