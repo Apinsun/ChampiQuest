@@ -6060,6 +6060,52 @@ nativelib = ["pyobjc (>=9.0) ; sys_platform == \"darwin\"", "pywin32 (>=305) ; s
 test = ["pytest (>=8)"]
 
 [[package]]
+name = "shap"
+version = "0.53.0"
+description = "A unified approach to explain the output of any machine learning model."
+optional = false
+python-versions = ">=3.12"
+groups = ["main"]
+files = [
+    {file = "shap-0.53.0-cp312-abi3-macosx_10_13_x86_64.whl", hash = "sha256:c3caea0200e7505ffd2d3bdbf2db56fbe9129da6edda202305751f1c3329e009"},
+    {file = "shap-0.53.0-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:95c18c3f6b123fbc764cf35ecf5704b9239bec0dae0fe6e1ea01e5e58c265159"},
+    {file = "shap-0.53.0-cp312-abi3-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cdcf5c063f12c8778831982fa45ee30818141a4bfe023b699fdf1620a0fce2b6"},
+    {file = "shap-0.53.0-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:491404b2fcd8661a3ebc6d260bea5c6ace5e8b8ff0962196c2d543d5e31c9408"},
+    {file = "shap-0.53.0-cp312-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:4c59dc3eed156cdf9ebb06954909f15145b57f2a07ab9e39373b43d7d9f99c4d"},
+    {file = "shap-0.53.0-cp312-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:73264a5ee7c8da85dde8cbf361cf1d1a6f2e622670a1c0a4378dd03ad3b68a47"},
+    {file = "shap-0.53.0-cp312-abi3-win_amd64.whl", hash = "sha256:983d86a62e09769b6cbba3d280977b8c542271eb8e92a9c553d69f0845df8f88"},
+    {file = "shap-0.53.0-cp312-abi3-win_arm64.whl", hash = "sha256:de517a46fa5ac8b72cc7c65eed4bd2fc891e319494aa884077420acbbe1beb8c"},
+    {file = "shap-0.53.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl", hash = "sha256:f5823e8c2d2a28c65348471d0baee5a3750d2f3853100f426e8ce5163f508f6b"},
+    {file = "shap-0.53.0-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:a84e6f30123ff76f596310a0b00d4cac769e7eaeaeb5f21f5086ff72590601b3"},
+    {file = "shap-0.53.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:e232100d63d851e7226573f479b5e6fe5c510dd7fa62a58562eeeb02cdc6a350"},
+    {file = "shap-0.53.0-cp314-cp314t-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:10c2588b0d46a1b5c02b4f4b1e83cac4ef0a0472077b908e99846221f0651739"},
+    {file = "shap-0.53.0-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4ec6e3e7facfae25b9b8e834c62f5c140417ef16e867040f4d6ac95918267f1f"},
+    {file = "shap-0.53.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:11fd0b7705cef0c767ae84c99cd13b77d9c28c56d3445f1bc6332e0ded48e62b"},
+    {file = "shap-0.53.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:3b020ec262b0c18f9739465e1b696bca742360a64a1bb07e21d0b3a3c53d2ea7"},
+    {file = "shap-0.53.0-cp314-cp314t-win_amd64.whl", hash = "sha256:2cd06b5d6d3da9cf51fdac889b3a375a1fc7e9c8f735e139be2bb87d0612f457"},
+    {file = "shap-0.53.0-cp314-cp314t-win_arm64.whl", hash = "sha256:a55625b36814a961410786880a25ff07d26f8872ed60784f5ac9b410f6c31f83"},
+    {file = "shap-0.53.0-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:5d35da9c49aef8e431476d02fe84481c90264aae715c2b110002eaf1ece40b8b"},
+    {file = "shap-0.53.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:543b136a826a368eb16145a6637224be6fa5f7aacb3b1558e4174d7ee80b4dae"},
+    {file = "shap-0.53.0-cp315-cp315t-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:4b1b804c2798d16a6db0a34c2634a54f1385d65bf0075be86cd444e56019d4b7"},
+    {file = "shap-0.53.0-cp315-cp315t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a125f1fdcf8cdc9d669898c4ec385470ff07834f82777d54a9917a280831d906"},
+    {file = "shap-0.53.0-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:4919a23ac86feecfd3c039fb771633bface15e4444dccb4970e2c90610d53524"},
+    {file = "shap-0.53.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:5beadf6e78d3d761462ebdcbe574a4c663d4ee6368226a4edcd18ad45f294862"},
+    {file = "shap-0.53.0-cp315-cp315t-win_amd64.whl", hash = "sha256:5bd1922e309376f3644b3dda8d38a29436b3cba743d4247d0207a38e0705a2cc"},
+    {file = "shap-0.53.0-cp315-cp315t-win_arm64.whl", hash = "sha256:14a33b9a8e1c65e05f3313091eaf298b16c3859d405a238a4862550376b3b070"},
+    {file = "shap-0.53.0.tar.gz", hash = "sha256:adebe5538f0815a0923e074174ad87a7039a61638146f1375113643a34197840"},
+]
+
+[package.dependencies]
+cloudpickle = "*"
+numpy = ">=2"
+packaging = ">20.9"
+pandas = "*"
+scikit-learn = "*"
+scipy = "*"
+slicer = "0.0.8"
+tqdm = ">=4.27.0"
+
+[[package]]
 name = "shapely"
 version = "2.2.0"
 description = "Manipulation and analysis of geometric objects"
@@ -6169,6 +6215,18 @@ scipy = ">=1.10.0"
 
 [package.extras]
 rich = ["rich (>=12)"]
+
+[[package]]
+name = "slicer"
+version = "0.0.8"
+description = "A small package for big slicing."
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "slicer-0.0.8-py3-none-any.whl", hash = "sha256:6c206258543aecd010d497dc2eca9d2805860a0b3758673903456b7df7934dc3"},
+    {file = "slicer-0.0.8.tar.gz", hash = "sha256:2e7553af73f0c0c2d355f4afcc3ecf97c6f2156fcf4593955c3f56cf6c4d6eb7"},
+]
 
 [[package]]
 name = "smmap"
@@ -7278,4 +7336,4 @@ type = ["pytest-mypy (>=1.0.1) ; platform_python_implementation != \"PyPy\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "fc8f6fa2919ab7d29bfe13db064ae83a35d2515dcdf00885901b45a286a4848a"
+content-hash = "10323682fa3a581de7b8d8bcb4f5c92d445f47d203aeb30a7e327d298c6778eb"

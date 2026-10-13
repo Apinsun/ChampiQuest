@@ -43,6 +43,24 @@ species:
     season: "automne"
     habitat: "forêt"
 
+  - key: "boletus_aereus"
+    scientific: "Boletus aereus"
+    gbif_key: 8733688
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "boletus_reticulatus"
+    scientific: "Boletus reticulatus"
+    gbif_key: 5954691
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "boletus_pinophilus"
+    scientific: "Boletus pinophilus"
+    gbif_key: 5954949
+    season: "été-automne"
+    habitat: "forêt"
+
   - key: "imleria_badia"
     scientific: "Imleria badia"
     gbif_key: 7832732
@@ -66,3 +84,45 @@ species:
     gbif_key: 2594601  # clé de GENRE : toutes les espèces de morilles (cf. manque de données M. esculenta)
     season: "printemps"
     habitat: "forêt / verger"
+
+  - key: "xerocomellus_chrysenteron"
+    scientific: "Xerocomellus chrysenteron"
+    gbif_key: 2519413
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "xerocomus_subtomentosus"
+    scientific: "Xerocomus subtomentosus"
+    gbif_key: 2519457
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "cantharellus_amethysteus"
+    scientific: "Cantharellus amethysteus"
+    gbif_key: 5249555
+    season: "été-automne"
+    habitat: "forêt"
+
+  - key: "craterellus_tubaeformis"
+    scientific: "Craterellus tubaeformis"
+    gbif_key: 2554536
+    season: "automne"
+    habitat: "forêt"
+
+  - key: "craterellus_cornucopioides"
+    scientific: "Craterellus cornucopioides"
+    gbif_key: 2554662
+    season: "automne"
+    habitat: "forêt"
+
+  - key: "macrolepiota_excoriata"
+    scientific: "Macrolepiota excoriata"
+    gbif_key: 2536733
+    season: "été-automne"
+    habitat: "prairie"
+
+  - key: "chlorophyllum_rhacodes"
+    scientific: "Chlorophyllum rhacodes"
+    gbif_key: 5955395
+    season: "été-automne"
+    habitat: "prairie / lisière"
