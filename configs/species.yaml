@@ -5,10 +5,10 @@
 # Chaque section est commentée pour expliquer à quoi sert chaque valeur.
 # ----------------------------------------------------------------------------
 
-# ---- Zone géographique : Alsace --------------------------------------------
+# ---- Zone géographique : Vosges + Forêt-Noire ------------------------------
 # Rectangle englobant (bounding box) exprimé en degrés décimaux.
-# L'Alsace s'étend grosso modo de 47.4° à 49.0° de latitude
-# et de 6.8° à 8.3° de longitude.
+# La zone englobe les Vosges alsaciennes ET la Forêt-Noire allemande
+# (partie est de la bbox) : milieux très similaires, on garde les deux.
 # min_* / max_* : bornes inférieures et supérieures de la zone.
 bbox:
   min_lat: 47.4
@@ -61,8 +61,8 @@ species:
     season: "été-automne"
     habitat: "prairie / lisière"
 
-  - key: "morchella_esculenta"
-    scientific: "Morchella esculenta"
-    gbif_key: 2594602
+  - key: "morchella"
+    scientific: "Morchella"
+    gbif_key: 2594601  # clé de GENRE : toutes les espèces de morilles (cf. manque de données M. esculenta)
     season: "printemps"
     habitat: "forêt / verger"

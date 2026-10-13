@@ -1,0 +1,30 @@
+boletus_edulis:
+  start_doy: 172
+  end_doy: 318
+  n_obs: 667
+  p5_raw: 186
+  p95_raw: 304
+cantharellus_cibarius:
+  start_doy: 152
+  end_doy: 298
+  n_obs: 1351
+  p5_raw: 166
+  p95_raw: 284
+imleria_badia:
+  start_doy: 185
+  end_doy: 321
+  n_obs: 359
+  p5_raw: 199
+  p95_raw: 307
+macrolepiota_procera:
+  start_doy: 190
+  end_doy: 326
+  n_obs: 438
+  p5_raw: 204
+  p95_raw: 312
+morchella:
+  start_doy: 67
+  end_doy: 148
+  n_obs: 281
+  p5_raw: 81
+  p95_raw: 134

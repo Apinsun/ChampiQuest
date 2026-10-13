@@ -22,7 +22,7 @@ flowchart TB
     subgraph EXT["Sources externes"]
         GBIF["GBIF / iNaturalist<br/>(occurrences)"]
         OM["Open-Meteo<br/>(météo historique)"]
-        ENV["IGN BD Forêt · DoneSol · DEM<br/>(environnement statique)"]
+        ENV["Corine Land Cover · SoilGrids · DEM<br/>(environnement statique)"]
     end
 
     subgraph PKG["champiquest — src/"]
@@ -63,9 +63,9 @@ ChampiQuest/
 ├── src/champiquest/
 │   ├── config.py               # charge YAML + variables d'environnement
 │   ├── data/
-│   │   ├── gbif.py             # ingestion occurrences (bbox Alsace)
+│   │   ├── gbif.py             # ingestion occurrences (bbox Vosges + Forêt-Noire)
 │   │   ├── openmeteo.py        # historique météo + cache
-│   │   ├── environnement.py    # IGN BD Forêt, DoneSol, DEM
+│   │   ├── environnement.py    # Corine Land Cover, SoilGrids, DEM
 │   │   ├── pseudo_absences.py  # génération Target=0
 │   │   └── make_dataset.py     # orchestration → dataset final
 │   ├── features/
@@ -102,7 +102,7 @@ ChampiQuest/
 flowchart LR
     GBIF["GBIF"] --> ING["ingestion<br/>(data/)"]
     OM["Open-Meteo"] --> ING
-    ENV["IGN/DoneSol/DEM"] --> ING
+    ENV["CLC/SoilGrids/DEM"] --> ING
     ING --> RAW[("raw")]
     RAW --> FEAT["features/<br/>(weather · season · géo)"]
     FEAT --> PA["pseudo_absences<br/>(Target=0)"]

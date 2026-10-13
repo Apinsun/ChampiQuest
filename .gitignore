@@ -13,6 +13,8 @@ __pycache__/
 # Données & modèles (volumineux / régénérés — voir AGENTS.md et reports/)
 data/
 mlruns/
+mlflow.db
+mlartifacts/
 models/
 
 # Secrets

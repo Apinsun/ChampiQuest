@@ -8,8 +8,9 @@
 
 ## 1. Objectif
 
-Prédire, pour une espèce de champignon donnée et un lieu donné en Alsace, si les
-conditions météorologiques récentes sont favorables à la fructification.
+Prédire, pour une espèce de champignon donnée et un lieu donné dans la zone
+Vosges + Forêt-Noire, si les conditions météorologiques récentes sont favorables
+à la fructification.
 
 C'est la **première partie** d'un projet plus large qui comprendra ensuite :
 
@@ -19,8 +20,9 @@ C'est la **première partie** d'un projet plus large qui comprendra ensuite :
 
 ### Périmètre du MVP
 
-- Zone géographique : **Alsace** (bounding box ~ lat 47.4–49.0, lon 6.8–8.3).
-- **2 à 3 espèces** pour commencer (ex. cèpe de Bordeaux, girolle).
+- Zone géographique : **Vosges + Forêt-Noire** (bbox ~ lat 47.4–49.0, lon 6.8–8.3,
+  incluant la partie allemande et la bordure suisse).
+- **5 taxons** : cèpe de Bordeaux, bolet bai, girolle, coulmelle, morilles (genre).
 - Modèle tabulaire : **LightGBM**.
 
 ---
@@ -33,11 +35,11 @@ C'est la **première partie** d'un projet plus large qui comprendra ensuite :
 | Granularité du modèle | **Un modèle par espèce** (config-driven) | Fenêtres de saison et pseudo-absences déjà par espèce ; question utilisateur par espèce |
 | Fallback données rares | **Regroupement par genre** (bolets ensemble, chanterelles ensemble) | Si une espèce a < ~100–150 observations |
 | Dépendances | **Poetry 2.x** | Habitude du projet, lockfile partagé CI/Docker |
-| Tracking expériences | **MLflow local** (par machine) | `mlruns/` **gitignoré** ; git = source de vérité (code + config + seed → reproductible) |
+| Tracking expériences | **MLflow local** (par machine) | `mlflow.db`/`mlartifacts/` **gitignorés** ; git = source de vérité (code + config + seed → reproductible) |
 | Cache météo | `requests-cache` | Éviter de re-requêter Open-Meteo à chaque itération |
 | API | **Une seule FastAPI**, routers par domaine | `growth` maintenant, `species` plus tard ; interface = client séparé |
 | Équilibrage classes | **50/50 par construction** (1 absence générée pour 1 présence) | Pas de poids (`scale_pos_weight`) : les absences sont synthétiques, pas besoin de subir un déséquilibre |
-| Features spatiales | **Pas de lat/lon brutes** dans le modèle | Remplacées par altitude, pente, orientation, type de forêt (BD Forêt), type de sol, humidité du sol |
+| Features spatiales | **Pas de lat/lon brutes** dans le modèle | Remplacées par altitude, pente, orientation, type de forêt (CLC), type de sol (SoilGrids), humidité du sol |
 | Règle hors-saison | **Règle métier** (filtre en amont, sans appeler le modèle) | Évite l'inférence out-of-distribution |
 
 ---
@@ -127,12 +129,24 @@ ChampiQuest/
 
 ## 4. Pipeline de données
 
+### 4.0 Zone d'étude & qualité géographique
+
+- La zone couvre **Vosges + Forêt-Noire** (bbox 47.4–49.0 lat, 6.8–8.3 lon), incluant
+  la partie allemande et la bordure suisse — milieux très similaires, conservés
+  volontairement (~3123 occurrences, 74 % côté ouest du Rhin).
+- **Découverte EDA** : la colonne `countryCode` GBIF est **peu fiable** près des
+  frontières (60 % des lignes étiquetées « CH » alors que géographiquement en
+  France). On ne l'utilise donc **pas** pour délimiter la zone : en cas de besoin,
+  filtrage par **géométrie** (polygone de frontière + `geopandas`), pas par code pays.
+- Conséquence : les sources environnementales sont **paneuropéennes/globales**
+  (CLC, SoilGrids, EU-DEM) pour couvrir uniformément les deux côtés de la frontière.
+
 ### 4.1 Sources
 
-- **Occurrences** : GBIF (via `pygbif`), filtrées par taxon, bbox Alsace,
+- **Occurrences** : GBIF (via `pygbif`), filtrées par taxon, bbox Vosges + Forêt-Noire,
   coordonnées obligatoires. iNaturalist en complément (souvent déjà agrégé dans GBIF).
 - **Météo historique** : Open-Meteo (API archive), avec `requests-cache`.
-- **Environnement** : IGN BD Forêt (essences forestières), DoneSol / Gis Sol (sols),
+- **Environnement** : Corine Land Cover (type de forêt), SoilGrids (type de sol),
   Copernicus EU-DEM (altitude/pente/orientation).
 
 ### 4.2 Croisement
@@ -211,17 +225,17 @@ et empêchent la généralisation). À la place :
 
 - **Altitude** (Open-Meteo ou EU-DEM) ;
 - **Pente + orientation** (à dériver d'un DEM, ex. Copernicus EU-DEM 25 m) ;
-- **Type de forêt / essences** (IGN BD Forêt) — feuillus vs résineux, essence dominante ;
-- **Type de sol** (DoneSol / Gis Sol, INRAE) ;
+- **Type de forêt** (Corine Land Cover) — feuillus / résineux / mixte ;
+- **Type de sol** (SoilGrids) ;
 - **Humidité du sol** (Open-Meteo).
 
 > Les coordonnées restent nécessaires en **entrée d'API** (pour aller chercher la
 > météo et dériver ces features), elles ne sont simplement pas **injectées dans le
 > modèle**.
 
-> Note géographique : en Alsace, le gradient nord-sud est faible ; le vrai
-> gradient est **est-ouest** (plaine du Rhin ~150 m vs Vosges ~1400 m), capturé
-> par l'altitude/pente/orientation.
+> Note géographique : dans la zone, le gradient nord-sud est faible ; le vrai
+> gradient est **est-ouest** (plaine du Rhin ~150 m vs Vosges/Forêt-Noire
+> ~1400 m), capturé par l'altitude/pente/orientation.
 
 ---
 
@@ -257,7 +271,7 @@ semaine entre train et test (le 12 oct en train, le 14 oct en test).
 
 ## 7. MLOps
 
-- **MLflow local** par machine ; `mlruns/` **gitignoré**.
+- **MLflow local** par machine ; `mlflow.db`/`mlartifacts/` **gitignorés**.
 - **git = source de vérité** : code + config + seed ⇒ un run est reproductible
   sur n'importe quelle machine (laptop ↔ desktop).
 - **Vue unifiée des runs (optionnel, semaine 3)** : `mlflow server` sur le
@@ -286,14 +300,14 @@ L'EDA tranche plusieurs décisions encore ouvertes :
    - ce qui doit différer : **uniquement la météo récente** ;
    - *(En réserve)* : *distance aux routes/sentiers* (BD TOPO, proxy d'effort de
      prospection) — écarté pour l'instant, à réévaluer si besoin.
-7. **EDA sur IGN BD Forêt, DoneSol et DEM** → décider si on intègre type de
+7. **EDA sur Corine Land Cover, SoilGrids et DEM** → décider si on intègre type de
    forêt, type de sol + pente/orientation dès le départ.
 
 ---
 
 ## 9. Questions encore ouvertes
 
-- [ ] Masque de forêt pour les absences : BD Forêt (IGN) ou jitter seul pour commencer ?
+- [ ] Masque de forêt pour les absences : Corine Land Cover ou jitter seul pour commencer ?
 - [ ] Intégrer pente/orientation (DEM) dès le MVP, ou altitude + humidité du sol
       (Open-Meteo) suffisent ?
 - [ ] Nombre exact d'espèces et choix (cèpe, girolle, + ?) — dépend de l'EDA.
