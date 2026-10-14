@@ -5,16 +5,16 @@
 # Chaque section est commentée pour expliquer à quoi sert chaque valeur.
 # ----------------------------------------------------------------------------
 
-# ---- Zone géographique : Vosges + Forêt-Noire ------------------------------
-# Rectangle englobant (bounding box) exprimé en degrés décimaux.
-# La zone englobe les Vosges alsaciennes ET la Forêt-Noire allemande
-# (partie est de la bbox) : milieux très similaires, on garde les deux.
+# ---- Zone géographique : Vosges + Forêt-Noire (étendues) -------------------
+# Rectangle englobant (bounding box) en degrés décimaux.
+# Élargie pour couvrir les Vosges de l'ouest (plus océaniques) et la Forêt-Noire
+# de l'est (plus continentale), afin d'augmenter le volume d'observations.
 # min_* / max_* : bornes inférieures et supérieures de la zone.
 bbox:
-  min_lat: 47.4
-  max_lat: 49.0
-  min_lon: 6.8
-  max_lon: 8.3
+  min_lat: 47.3
+  max_lat: 49.3
+  min_lon: 6.4
+  max_lon: 8.7
 
 # ---- Plage d'années d'observation ------------------------------------------
 # start : on commence en 1950 car c'est la limite de fiabilité des

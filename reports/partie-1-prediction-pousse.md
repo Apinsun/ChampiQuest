@@ -195,6 +195,51 @@ champi" (fuite déguisée).
 pas de poids. `scale_pos_weight` uniquement si on décide de sur-échantillonner
 les absences pour refléter la rareté (option de raffinement).
 
+### 4.4bis — Implémentation réelle & littérature (validation a posteriori)
+
+Ce qui est implémenté dans `make_dataset.py` :
+
+- **1 absence par présence** (50/50), même point de grille 0.25° (jitter spatial).
+- **Date aléatoire intra-saison** du groupe (pas de janvier pour une espèce d'été).
+- **Buffer ±14 j** de toute observation réelle même espèce + même point
+  (un carpophore persiste ~1-2 semaines → évite une « absence » contaminée).
+- **≥30 j de météo** avant (complétude des features).
+
+Ce que dit la littérature (et où on se situe) :
+
+1. **Barbet-Massin et al. 2012** (*Methods Ecol Evol*) — la référence sur
+   « combien/où/comment » échantillonner les pseudo-absences. Le ratio 1:1 est
+   correct pour les arbres boostés (GLM/GBM/RF) ; l'échantillonnage **aléatoire
+   sur toute la zone** est biaisé par l'accessibilité (le modèle apprend
+   « route = présence »).
+2. **Phillips et al. 2009** — échantillonner le bruit de fond avec **le même
+   biais que les présences** (target-group background). Notre règle « même cellule
+   qu'une présence » en est une version spatiale stricte : cohérente, car on
+   modélise **quand** une espèce fructifie (à un endroit connu), pas **où** elle vit.
+3. **VanDerWal et al. 2009** — les pseudo-absences ne doivent pas s'éloigner des
+   conditions connues (restriction environnementale) : « même cellule + intra-saison »
+   l'applique.
+
+**Point améliorable identifié** : l'**année** des absences est tirée
+**uniformément** sur 2000-2026, alors que les présences suivent l'effort de
+prospection (plus dense après ~2015) → biais temporel d'échantillonnage.
+Piste : tirer l'année de l'absence **proportionnellement au nombre de présences
+de l'année** (proxy d'effort), ou « même année que la présence jumelle ».
+
+**Limite épistémologique assumée** : une pseudo-absence n'est pas une vraie
+absence (personne n'a peut-être regardé ce jour-là). L'AUC mesuré est donc une
+**borne inférieure** du pouvoir discriminant réel (les absences contaminées
+diluent le signal).
+
+**Résultats des tests** (LOOCV, LightGBM A_simple) :
+
+- **Année pondérée par l'effort** : +0.01-0.02 sur 4/6 espèces (morille +0.02,
+  cèpes +0.01, bolet bai +0.01, cèpe d'été +0.01) → **adopté**.
+- **Buffer 7/14/30 j** : pas de vainqueur net ; 30 j plombe la morille (0.63) →
+  **14 j conservé**.
+- **Ratio 1:1 vs 1:2** : 1:2 n'aide que les lépiotes (+0.03), neutre ailleurs →
+  **1:1 conservé**.
+
 ### 4.5 Limite assumée
 
 Données présence-seul ⇒ impossible de garantir une "vraie" absence. Le modèle

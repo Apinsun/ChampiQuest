@@ -80,13 +80,46 @@ s'effondre** (0.693 → 0.528), espèce de printemps noyée par les 96 % d'autom
 **Genre taxonomique ≠ saison ≠ habitat.** Vérifier le moment ET le lieu (et l'édibilité)
 avant de regrouper — sinon on mélange des signaux différents.
 
-## 3. Baselines actuelles (full features, modèles spécialisés/regroupés)
+## 3. Baselines actuelles (full features, LightGBM `A_simple`)
 
-| Taxa | Meilleur AUC |
-|---|---|
-| lépiotes (procera + rhacodes) | **0.739** |
-| girolle | 0.716 |
-| cèpes (edulis + aereus) | 0.704 |
-| morilles (genre) | 0.693 |
-| bolet bai | 0.668 |
-| cèpe d'été (reticulatus) | 0.642 |
+Progression en 3 étapes : (a) zone initiale → (b) zone élargie (×2 data) →
+(c) + absences à année pondérée par l'effort.
+
+| Taxa | Zone initiale | + zone élargie | + absences effort-pondéré |
+|---|---|---|---|
+| bolet bai | 0.656 | 0.739 | **0.749** |
+| lépiotes (procera + rhacodes) | 0.740 | 0.729 | 0.724 |
+| girolle | 0.728 | 0.712 | 0.713 |
+| cèpes (edulis + aereus) | 0.703 | 0.710 | 0.721 |
+| cèpe d'été (reticulatus) | 0.638 | 0.696 | 0.706 |
+| morilles (genre) | 0.625 | 0.662 | 0.682 |
+
+**Lecture** : l'élargissement a surtout aidé les espèces *data-limited*
+(bolet bai ×3 → +0.08, cèpe d'été +0.06, morille +0.04) ; les grosses espèces
+plafonnent (~0.71-0.73, bornées par le signal). L'**année d'absence pondérée par
+l'effort** (target-group background temporel) apporte +0.01-0.02 sur 4 espèces
+(dont morille +0.02). La morille reste en retrait (température du sol absente).
+La régression logistique s'effondre sur la morille (0.42 < 0.5) → relation
+printemps **non-linéaire**, LightGBM nécessaire.
+
+**Configs LightGBM** : `A_simple` (7 feuilles, prof 4) ≥ `B_moyen` (15 feuilles)
+> `C_complexe` (31 feuilles) → le modèle simple gagne (le complexe surapprend).
+
+**Pseudo-absences validées** : buffer 7/14/30 j et ratio 1:1/1:2 testés →
+**14 j + 1:1** reste le meilleur compromis (buffer 30 j plombe la morille 0.63,
+ratio 1:2 neutre sauf lépiotes). Seule vraie amélioration : année pondérée par l'effort.
+
+### Round « sol » (NASA POWER : température de surface + humidité du sol)
+
+Le proxy « bilan hydrique » (précip − ET0) a été remplacé/complété par les vraies
+variables de sol, en **daily** via NASA POWER (MERRA-2, sans clé) :
+
+- `TS` (Earth Skin Temperature, °C) → `temp_sol_J14`, `rechauffement_sol` (J-7 − J-30) ;
+- `GWETTOP` (Surface Soil Wetness, 0-1) → `humidite_sol_J30`.
+
+Résultats (LightGBM A_simple) : **bolet bai +0.020 (0.769)**, **morille +0.013 (0.695,
+son meilleur score)**, girolle +0.009, les espèces d'automne neutres.
+
+→ **Valide la littérature** : le déclencheur printanier de la morille est le
+**réchauffement du sol** (Guo 2025), et l'**humidité du sol** (Boukary 2024) est le
+moteur principal de la fructification — le proxy précip−ET0 la sous-estimait.
