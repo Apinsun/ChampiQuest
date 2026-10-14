@@ -435,15 +435,15 @@ par espèce, 12 features) :
 
 | Espèce | 2025 (prés) | AUC | Précision |
 |---|---|---|---|
-| cèpes | 412 (216) | **0.81** | 76 % |
-| lépiotes | 755 (416) | 0.78 | 73 % |
+| cèpes | 293 (97) | **0.84** | 75 % |
+| cèpe d'été | 197 (21) | 0.74 | 62 % |
+| lépiotes | 388 (49) | 0.72 | 57 % |
 | girolle | 158 (43) | 0.71 | 62 % |
-| bolet bai | 433 (211) | 0.66 | 67 % |
-| cèpe d'été | 316 (140) | 0.66 | 63 % |
+| bolet bai | 281 (59) | 0.66 | 56 % |
 | morille | 30 (6) | 0.54 | 40 % |
 
-→ **Pas d'effondrement** : cèpes et lépiotes généralisent très bien à 2025 (0.81/0.78),
-les autres restent dans la plage LOOCV. La morille n'a que 6 présences 2025 (peu fiable).
+→ **Pas d'effondrement** : cèpes et cèpe d'été généralisent bien (0.84/0.74). La morille
+n'a que 6 présences 2025 (peu fiable). Note : proxies exclus du test (entraînement seul).
 
 ### 11.5 Autres sources de données fongiques (explorées, non retenues)
 

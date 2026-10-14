@@ -220,12 +220,13 @@ ses absences — à corriger par un RNG par espèce).
 
 | Espèce | AUC LOOCV final |
 |---|---|
-| lépiotes | **0.812** |
-| cèpe d'été | 0.805 |
-| bolet bai | 0.760 |
-| cèpes | 0.735 |
+| cèpe d'été | **0.853** |
+| lépiotes | 0.829 |
+| bolet bai | 0.766 |
 | girolle | 0.730 |
 | morille | 0.717 |
+| cèpes | 0.706 |
 
-Moyenne **0.760** (+0.05 vs sans proxy). Bémol assumé : le N par espèce est choisi sur les
-mêmes folds LOOCV (sélection légèrement optimiste).
+Moyenne **0.767**. Bémols assumés : (1) le N par espèce est choisi sur les mêmes folds
+LOOCV (sélection légèrement optimiste) ; (2) les proxies sont **exclus du test** (ils ne
+servent qu'à l'entraînement — sinon ils gonflent l'AUC en tant que positifs « faciles »).
