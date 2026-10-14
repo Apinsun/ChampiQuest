@@ -123,3 +123,35 @@ son meilleur score)**, girolle +0.009, les espèces d'automne neutres.
 → **Valide la littérature** : le déclencheur printanier de la morille est le
 **réchauffement du sol** (Guo 2025), et l'**humidité du sol** (Boukary 2024) est le
 moteur principal de la fructification — le proxy précip−ET0 la sous-estimait.
+
+### Random search LightGBM (expérience) — `A_simple` conservé
+
+40 itérations de random search (espace orienté régularisation) sur 2 espèces :
+cèpes +0.017 (0.735), bolet bai +0.005 (0.774). Gains **dans le bruit** de la LOOCV
+et **optimistes** (sélection sur les mêmes folds → fuite légère). Aucune config ne
+transforme le score ; les meilleures restent dans un régime proche de `A_simple`.
+
+→ **`A_simple` conservé** : le modèle simple (7 feuilles, prof 4, 50 arbres) est déjà
+proche de l'optimum. Ce résultat valide le refus de sur-ingénierier.
+
+### Analyse SHAP : morille (printemps) vs bolet bai (automne)
+
+`temp_sol_J14` est la **feature n°1 pour les deux espèces** (|SHAP| = 0.44 morille,
+0.58 bolet bai) — la température du sol (NASA POWER) était bien le chaînon manquant.
+
+**Direction opposée selon la phénologie :**
+
+- **Morille (printemps)** : fenêtre de sol **étroite** (~6-12 °C). Sol froid (<6 °C)
+  SHAP −0.17, sol chaud (>12 °C) SHAP −0.93 → les deux extrêmes défavorisent, le pic
+  est au milieu. `rechauffement_sol` corr +0.59 (le réchauffement favorise) → confirme
+  le déclencheur « réchauffement du sol » (Guo 2025).
+- **Bolet bai (automne)** : sol froid favorise (+0.20), sol chaud défavorise (−0.27)
+  → fructifie quand le sol **refroidit**. `bilan_hydrique_J30` corr **+0.90** : la pluie
+  récente (30 j) est LE déclencheur (Kauserud 2008).
+
+**Humidité** : chez la morille elle est toujours élevée (fonte des neiges) → précondition,
+pas discriminant. Chez le bolet bai, le bilan hydrique 30 j domine.
+
+**Bémol** : les corrélations SHAP↔feature peuvent être confondues (ex. `humidite_sol_J30`
+« sec → positif » chez le bolet bai = artefact de saison, n=103). Le rang d'importance est
+robuste, les directions extrêmes à prendre avec prudence.
