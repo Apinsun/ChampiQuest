@@ -370,3 +370,95 @@ L'EDA tranche plusieurs décisions encore ouvertes :
 5. Implémenter `features/` (weather, season).
 6. Implémenter `models/` (train, evaluate) avec MLflow.
 7. Implémenter `api/routers/growth.py` + `business_rules.py`.
+
+---
+
+## 11. Auto-critiques & défense (soutenance)
+
+### 11.1 Placement des absences (procédure exacte + défense)
+
+1 absence par présence, même cellule 0.25° que la présence (jitter spatial) :
+
+1. **Date intra-saison** : jour tiré dans la fenêtre de fructification du groupe
+   (percentiles 5/95 du jour-de-l'année observé, ±14 j).
+2. **Année pondérée par l'effort** : tirée proportionnellement au nombre de
+   présences de l'année (target-group background temporel).
+3. **Buffer ±14 j** de toute observation réelle même espèce + même cellule (un
+   carpophore persiste ~1-2 semaines → évite de compter le même événement 2 fois).
+4. **≥30 j de météo** avant (complétude des features).
+
+**Défense** : c'est le *target-group background* (Phillips 2009) — on échantillonne
+le négatif avec le même biais que le positif. Cohérent car on modélise **quand** une
+espèce fructifie (à un endroit connu), pas **où** elle vit. La littérature valide
+(Barbet-Massin 2012 : 1:1 pour les arbres boostés ; VanDerWal 2009 : restriction
+environnementale). Limite assumée : pseudo-absence ≠ vraie absence (personne n'a
+peut-être regardé ce jour-là) → l'AUC est une **borne inférieure**.
+
+### 11.2 Pourquoi restreindre à la saison (pas l'année entière)
+
+Question attendue : « pourquoi ne pas entraîner sur l'année entière, le modèle
+apprendrait les bornes min/max de fructification ? »
+
+Réponse : c'est exactement ce qu'on veut **éviter**. Sur l'année entière, le modèle
+apprend un signal **trivial** (« janvier = pas de champi, octobre = champi », via les
+features de température) : l'AUC gonflerait (~0.95) sans rien apprendre sur la relation
+météo→fructification. La vraie question utile est : « **étant en saison**, la météo
+récente prédit-elle la pousse ? ». Le hors-saison est géré par la règle métier
+(calendrier), pas appris. Le coût calcul/API n'est qu'un bénéfice secondaire (on a de
+toute façon les séries complètes).
+
+### 11.3 Que veulent dire nos chiffres (AUC → taux d'erreur)
+
+AUC ≠ précision. AUC 0.78 = « sur une paire (jour de pousse, jour sans), le modèle
+classe le bon en premier 78 % des fois ». C'est un **rang**, pas un taux de réussite.
+
+En classification concrète (seuil 0.5, prédictions LOOCV agrégées) :
+
+| Espèce | AUC | Précision | Rappel | Erreur |
+|---|---|---|---|---|
+| bolet bai | 0.78 | 71 % | 77 % | ~29 % |
+| lépiotes | 0.76 | 69 % | 75 % | ~31 % |
+| cèpes | 0.74 | 68 % | 71 % | ~32 % |
+| girolle | 0.72 | 66 % | 65 % | ~34 % |
+| cèpe d'été | 0.70 | 65 % | 64 % | ~35 % |
+| morille | 0.67 | 62 % | 65 % | ~38 % |
+
+→ On se trompe **~30-35 % du temps** (vs 50 % au hasard). Modeste mais réel : la
+météo explique une partie, pas tout (patchiness du mycélium, microclimat, bruit des
+présences-seules). À assumer. Note : l'AUC agrégé (prédictions concaténées) diffère
+légèrement de l'AUC moyen par année (pondération par observation vs par année).
+
+### 11.4 Holdout 2025 (année jamais vue à l'entraînement)
+
+Entraîné sur ≤2024, testé sur 2025 :
+
+| Espèce | 2025 (prés/abs) | AUC | Précision |
+|---|---|---|---|
+| cèpes | 212 (97/115) | 0.76 | 66 % |
+| girolle | 138 (43/95) | 0.75 | 68 % |
+| lépiotes | 100 (49/51) | 0.73 | 67 % |
+| bolet bai | 133 (59/74) | 0.71 | 66 % |
+| cèpe d'été | 63 (21/42) | 0.68 | 59 % |
+| morille | 17 (6/11) | 0.73 | 65 % |
+
+→ **Pas d'effondrement** : les AUC 2025 restent dans la plage LOOCV (0.68-0.76).
+La morille n'a que 17 obs 2025 (peu fiable) ; le cèpe d'été faiblit (0.68). C'est
+l'évaluation la plus honnête : « le modèle tient sur une année jamais vue ».
+
+### 11.5 Autres sources de données fongiques (explorées, non retenues)
+
+Question attendue : « y a-t-il d'autres datasets que GBIF ? ». Exploration faite :
+
+- **FongiBase** (FongiFrance, 1,77 M) : présent dans GBIF (3 jeux), mais ~10 obs de nos
+  espèces dans notre bbox (3 cèpes, 4 girolles, 2 morilles, 1 bolet bai) → négligeable.
+  Le reste n'est accessible que via leur portail (pas d'API en vrac).
+- **Pilze Deutschlands** (DGfM, 4,5 M) : **absent de GBIF** (occurrences), mais l'accès
+  est un site PHP à cartes **images** (pas de téléchargement structuré) → non exploitable.
+- **INPN / OpenObs** : présent dans GBIF, couverture limitée pour notre zone.
+- **Andrew et al. 2018** (méta-base Dryad, 6 M) : presence-only, 8 pays.
+
+→ **Bilan** : notre GBIF est à **75 % issu de SwissFungi** (base suisse) — les Vosges (FR)
+et la Forêt-Noire (DE) sont sous-représentées dans GBIF. Les bases nationales (FongiBase,
+Pilzkartierung) contiendraient des présences non redondantes, mais ne sont **pas accessibles
+en vrac avec coordonnées + dates**. L'approche pseudo-absences reste nécessaire ; le biais
+suisse est une limite assumée.

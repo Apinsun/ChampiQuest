@@ -155,3 +155,32 @@ pas discriminant. Chez le bolet bai, le bilan hydrique 30 j domine.
 **Bémol** : les corrélations SHAP↔feature peuvent être confondues (ex. `humidite_sol_J30`
 « sec → positif » chez le bolet bai = artefact de saison, n=103). Le rang d'importance est
 robuste, les directions extrêmes à prendre avec prudence.
+
+### Élagage de features (data-driven) — set « pruned » 12 features
+
+Corrélations + SHAP agrégé → redondances majeures : `temp_sol_J14` ↔ `temp_mean_J14`
+**+0.97**, `tendance_temp` ↔ `rechauffement_sol` +0.85, fenêtres de pluie/bilan imbriquées ;
+et quasi-mortes (|SHAP| < 0.03) : `clc_code` (0.003), relief (pente/northness/eastness/
+altitude ~0.01), texture du sol (phh2o/clay/soc ~0.02).
+
+Set « pruned » (12 features) : `precip_J7/J30/J90`, `temp_min/max_J14`, `choc_thermique`,
+`tendance_temp`, `amplitude_thermique`, `bilan_hydrique_J30`, `temp_sol_J14`,
+`humidite_sol_J30`, `sand_0-5cm`.
+
+→ **Meilleur ou égal sur les 6 espèces** (cèpes +0.015, cèpe d'été +0.013, morille
++0.002…) avec **moins de la moitié des features**. LightGBM tolère la colinéarité, mais
+les features redondantes/mortes ajoutaient du bruit (surtout sur les petits datasets).
+Le set pruned est désormais **recommandé**.
+
+**Règle de choix quand deux features sont corrélées** (|corr| > 0.75) :
+
+1. on garde la plus importante selon |SHAP| ;
+2. à SHAP proche, préférence écologique : **sol > air** (`temp_sol` plutôt que
+   `temp_mean`), **extrêmes > moyenne** (`temp_min`/`temp_max` plutôt que `temp_mean`),
+   **bilan hydrique > pluie brute** (il ajoute l'ET0) ;
+3. pour les fenêtres cumulatives imbriquées (J7→J90), on garde un **éventail
+   court/moyen/long** (déclencheur + mémoire) plutôt que les top-SHAP ;
+4. cas limite ~0.84 (`precip_J30` ↔ `bilan_J30`) : on garde les deux car la différence
+   (l'ET0) est écologiquement porteuse et les deux ont un SHAP élevé.
+
+Le critère final reste l'**AUC LOOCV** : on teste et on garde le meilleur.
