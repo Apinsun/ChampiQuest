@@ -184,3 +184,48 @@ Le set pruned est désormais **recommandé**.
    (l'ET0) est écologiquement porteuse et les deux ont un SHAP élevé.
 
 Le critère final reste l'**AUC LOOCV** : on teste et on garde le meilleur.
+
+### Augmentation par proxies (espèces co-occurrentes)
+
+**Idée** : la co-fructification (`cofruct`) fuitait (feature indisponible en prod). On
+l'utilise autrement : les espèces qui co-apparaissent fortement avec notre cible sont
+ajoutées comme **présences** de la cible à l'entraînement (features restent 100 % météo).
+
+**Méthode de sélection d'un proxy** : espèce F vue dans la même cellule 0.25° à ±7 j
+d'une fraction ≥ `co_occ` des observations de la cible, avec un recouvrement de saison
+≥ `saison`. Les scores sont sauvegardés dans `data/processed/proxies_scores.csv`
+(pour filtrer sans recalculer).
+
+**Résultats (LightGBM A_simple, pruned 12 features)** :
+
+| Espèce | sans proxy | co_occ≥0.4 | co_occ≥0.5 | top-3 |
+|---|---|---|---|---|
+| lépiotes | 0.648 | 0.803 | 0.642 | **0.794** |
+| cèpe d'été | 0.728 | 0.754 | 0.754 | **0.782** |
+| bolet bai | 0.704 | 0.700 | 0.695 | **0.777** |
+| girolle | 0.771 | 0.721 | 0.734 | **0.774** |
+| cèpes | 0.708 | **0.720** | 0.701 | 0.702 |
+| morille | 0.705 | 0.653* | **0.720** | 0.684 |
+
+\* la morille à 0.4 était buggée (proxies = ses propres espèces de Morchella, corrigé
+en excluant les taxons déjà téléchargés). Le correctif a aussi nettoyé son pool d'effort.
+
+**Conclusion** : le **top-N par espèce** (seuil relatif) est le bon réglage — top-3 améliore
+la moyenne de **0.711 → 0.752** (+0.041), avec 4/6 espèces en hausse. La morille reste la
+seule perdante (probable bruit RNG : le générateur est global, l'ordre d'augmentation change
+ses absences — à corriger par un RNG par espèce).
+
+**Réglage final** : RNG par espèce (reproductibilité) + top-N par espèce
+(`PER_SPECIES_TOPK`) : cèpes=1, lépiotes=5, girolle=0, morille=0, bolet bai=3, cèpe d'été=1.
+
+| Espèce | AUC LOOCV final |
+|---|---|
+| lépiotes | **0.812** |
+| cèpe d'été | 0.805 |
+| bolet bai | 0.760 |
+| cèpes | 0.735 |
+| girolle | 0.730 |
+| morille | 0.717 |
+
+Moyenne **0.760** (+0.05 vs sans proxy). Bémol assumé : le N par espèce est choisi sur les
+mêmes folds LOOCV (sélection légèrement optimiste).

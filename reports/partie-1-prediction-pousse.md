@@ -430,20 +430,20 @@ légèrement de l'AUC moyen par année (pondération par observation vs par ann�
 
 ### 11.4 Holdout 2025 (année jamais vue à l'entraînement)
 
-Entraîné sur ≤2024, testé sur 2025 :
+Entraîné sur ≤2024, testé sur 2025 (config finale : absences à effort prouvé + top-N
+par espèce, 12 features) :
 
-| Espèce | 2025 (prés/abs) | AUC | Précision |
+| Espèce | 2025 (prés) | AUC | Précision |
 |---|---|---|---|
-| cèpes | 212 (97/115) | 0.76 | 66 % |
-| girolle | 138 (43/95) | 0.75 | 68 % |
-| lépiotes | 100 (49/51) | 0.73 | 67 % |
-| bolet bai | 133 (59/74) | 0.71 | 66 % |
-| cèpe d'été | 63 (21/42) | 0.68 | 59 % |
-| morille | 17 (6/11) | 0.73 | 65 % |
+| cèpes | 412 (216) | **0.81** | 76 % |
+| lépiotes | 755 (416) | 0.78 | 73 % |
+| girolle | 158 (43) | 0.71 | 62 % |
+| bolet bai | 433 (211) | 0.66 | 67 % |
+| cèpe d'été | 316 (140) | 0.66 | 63 % |
+| morille | 30 (6) | 0.54 | 40 % |
 
-→ **Pas d'effondrement** : les AUC 2025 restent dans la plage LOOCV (0.68-0.76).
-La morille n'a que 17 obs 2025 (peu fiable) ; le cèpe d'été faiblit (0.68). C'est
-l'évaluation la plus honnête : « le modèle tient sur une année jamais vue ».
+→ **Pas d'effondrement** : cèpes et lépiotes généralisent très bien à 2025 (0.81/0.78),
+les autres restent dans la plage LOOCV. La morille n'a que 6 présences 2025 (peu fiable).
 
 ### 11.5 Autres sources de données fongiques (explorées, non retenues)
 
@@ -454,7 +454,10 @@ Question attendue : « y a-t-il d'autres datasets que GBIF ? ». Exploration fai
   Le reste n'est accessible que via leur portail (pas d'API en vrac).
 - **Pilze Deutschlands** (DGfM, 4,5 M) : **absent de GBIF** (occurrences), mais l'accès
   est un site PHP à cartes **images** (pas de téléchargement structuré) → non exploitable.
-- **INPN / OpenObs** : présent dans GBIF, couverture limitée pour notre zone.
+- **INPN / OpenObs** : la fonge vosgienne y serait sans doute, mais **OpenObs est hors
+  service** depuis la cyber-attaque MNHN (été 2025, page WAF « BunkerWeb »). Dans GBIF,
+  l'INPN fonge est limité : ONF « flore et fonge » = 0 occ dans notre bbox, le reste =
+  faune/bibliographie ; l'Atlas Mycologique des Hauts-de-France est hors zone (nord).
 - **Andrew et al. 2018** (méta-base Dryad, 6 M) : presence-only, 8 pays.
 
 → **Bilan** : notre GBIF est à **75 % issu de SwissFungi** (base suisse) — les Vosges (FR)
