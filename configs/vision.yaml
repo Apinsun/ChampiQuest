@@ -1,0 +1,103 @@
+# Classes de la partie 2 — liste RÉELLE validée après EDA DF20.
+# `danger` qualifie le rôle de sécurité (pour la matrice de coût) :
+#   comestible | non_toxique | toxique | mortel
+# `n_images` = nombre d'images dans DF20 (train + public_test).
+
+classes:
+  # --- cibles comestibles ---
+  - name: Boletus edulis
+    common_name: Cèpe de Bordeaux
+    danger: comestible
+    n_images: 901
+  - name: Boletus reticulatus
+    common_name: Cèpe d'été
+    danger: comestible
+    n_images: 343
+  - name: Cantharellus cibarius
+    common_name: Girolle
+    danger: comestible
+    n_images: 673
+  - name: Macrolepiota procera
+    common_name: Lépiote élevée
+    danger: comestible
+    n_images: 472
+  - name: Imleria badia
+    common_name: Bolet bai
+    danger: comestible
+    n_images: 925
+  - name: Morchella spp.
+    common_name: Morille
+    danger: comestible
+    n_images: 173
+    # classe fusionnée : Morchella esculenta (142) + Morchella conica (31)
+
+  # --- sosies toxiques / mortels ---
+  - name: Rubroboletus satanas
+    common_name: Bolet Satan
+    danger: toxique
+    n_images: 155
+  - name: Lepiota cristata
+    common_name: Lépiote crêtée
+    danger: toxique
+    n_images: 486
+  - name: Gyromitra esculenta
+    common_name: Fausse morille
+    danger: mortel
+    n_images: 189
+  - name: Lepiota castanea
+    common_name: Lépiote châtain
+    danger: mortel
+    n_images: 198
+
+  # --- sosies non-toxiques (confusions fréquentes) ---
+  - name: Tylopilus felleus
+    common_name: Bolet amer
+    danger: non_toxique
+    n_images: 358
+  - name: Hygrophoropsis aurantiaca
+    common_name: Fausse girolle
+    danger: non_toxique
+    n_images: 620
+  - name: Boletus subtomentosus
+    common_name: Bolet subtomenteux
+    danger: non_toxique
+    n_images: 198
+    # NB : DF20 le nomme "Boletus subtomentosus" (ex. Xerocomus subtomentosus)
+  - name: Boletus pinophilus
+    common_name: Cèpe des pins
+    danger: non_toxique
+    n_images: 70
+  - name: Chlorophyllum rachodes
+    common_name: Lépiote déguenillée
+    danger: non_toxique
+    n_images: 281
+    # NB : DF20 orthographie "rachodes" (et non "rhacodes")
+  - name: Verpa bohemica
+    common_name: Verpe de Bohême
+    danger: non_toxique
+    n_images: 34
+
+# Classe négative « je ne vois pas de champi » (images COCO)
+no_mushroom:
+  label: no_mushroom
+  n_negatives: 3000
+
+# Modèle
+model:
+  backbone: convnext_base      # ou vit_base_patch16_224 (ImageNet-21k)
+  input_size: 384
+  pretrained: true
+
+# Décision de sécurité (matrice de coût)
+decision:
+  cost_edible_as_toxic: 10.0
+  cost_toxic_as_edible: 1.0
+  abstain_threshold: 0.6
+
+# Entraînement
+train:
+  epochs: 20
+  lr: 1.0e-4
+  val_frac: 0.15
+  test_frac: 0.15
+  seed: 42

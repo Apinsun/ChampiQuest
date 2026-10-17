@@ -11,151 +11,242 @@ projet ChampiQuest :
 - **Partie 1** (bouclée) : *quand/où* ça pousse (météo → fructification).
 - **Partie 2** (ce document) : *de quelle espèce il s'agit* (image → espèce).
 
-L'angle retenu est celui de la **sécurité de cueillette** : reconnaître nos espèces
-comestibles **et surtout ne pas les confondre avec leurs sosies toxiques**.
+L'angle retenu est la **sécurité de cueillette** : reconnaître nos comestibles **et
+surtout ne pas les confondre avec leurs sosies toxiques**.
 
 ## 2. Décisions actées
 
 | Question | Décision |
 |---|---|
-| Structure | **Monorepo** — nouveau sous-package `champiquest.vision`, sans toucher aux modules de la partie 1 |
-| Périmètre | **6 espèces cibles + leurs sosies** (~12-16 classes) |
-| Approche | **Fine-tuning** d'un CNN pré-entraîné (pas d'embeddings+LightGBM) |
-| Matériel | Développement et entraînement sur **un autre PC équipé d'une RTX 3090** (GPU) |
-| Données | **Danish Fungi 2020 (DF20)**, réduit à nos classes |
+| Structure | **Monorepo** — sous-package `champiquest.vision`, sans toucher à la partie 1 |
+| Périmètre | **6 cibles + sosies** (toxiques **et** non-toxiques) |
+| Approche | **Fine-tuning** d'un backbone pré-entraîné (pas d'embeddings+LightGBM) |
+| Backbone | **ConvNeXt-Base (384px)** puis **ViT-B/16 ImageNet-21k** en comparaison |
+| Librairie | **timm** (+ torch, torchvision) |
+| Données | **DF20** (nos classes) + **COCO** (négatifs « pas de champi ») |
+| Négatifs | classe **« pas de champi »** → modèle à **N+1 classes** |
+| Calibration | **temperature scaling** → probabilités fiables |
+| Sécurité | **matrice de coût** (comestible prédit = toxique réel → fortement pénalisé) |
 | Tracking | **MLflow** (réutilise l'installation de la partie 1) |
+| Produit | pas d'appli, mais **contrat d'API** réfléchi (soutenance) |
 
-## 3. Données : Danish Fungi 2020 (DF20)
+## 3. Données
 
-- **Référence académique** : Picek et al., *Danish Fungi 2020 — Not Just Another
-  Image Recognition Dataset* (WACV 2022, ~90 citations).
-- ~**296 000 images**, ~**1600 espèces**, photos **in-situ** (Atlas fongique danois),
-  labels validés par des mycologues.
-- Espèces **européennes** → nos 6 espèces y figurent a priori (à vérifier, §12).
+### 3.1 Danish Fungi 2020 (DF20)
 
-**Pourquoi DF20** plutôt que d'autres datasets Kaggle :
+- Référence académique : Picek et al., *Danish Fungi 2020* (WACV 2022, ~90 citations).
+- ~**296 000 images**, ~**1600 espèces**, photos **in-situ**, labels validés par des
+  mycologues, **espèces européennes**.
+- Fournit un **`observation_id`** par photo : plusieurs photos d'une même observation
+  partagent le même label d'espèce → base du split anti-fuite (§9).
 
-- `FungiTastic` (2024) : plus gros et plus riche (masques, climat), mais trop lourd
-  pour notre besoin.
-- `MO106` : propre mais petit (29 k images / 106 espèces).
-- `Mushrooms-215` : trop petit (~4 images/classe).
-- `FungiCLEF / FGVC8` : compétition, millions d'images → hors scope.
+### 3.2 Négatifs « pas de champi » — COCO
 
-> Alternative de secours si DF20 manque de classes : les **images GBIF** (on a déjà
-> l'accès via la partie 1) pour compléter des espèces rares — mais bruitées, à
-> n'utiliser qu'en appoint.
+- DF20 ne contient que des champignons → il faut des images « sans champignon ».
+- **COCO** (scènes réelles) retenu pour la vitesse et la diversité.
+- ⚠️ piège à éviter : des négatifs trop « studio » (ImageNet) créeraient un raccourci
+  « fond neutre = pas un champignon ». COCO (scènes in-situ) limite ce biais.
+- Si des raccourcis apparaissent : compléter par des **non-fungi iNaturalist/GBIF**
+  (plantes, insectes — pipeline GBIF déjà maîtrisé en partie 1).
+- Volume cible : ~2000-5000 images.
 
-## 4. Périmètre : espèces cibles + sosies
+### 3.3 Autres datasets (écartés)
 
-| Cible (comestible) | Sosie(s) — danger |
-|---|---|
-| Cèpe de Bordeaux (*Boletus edulis*) | Bolet amer (*Tylopilus felleus*) — amer, gâche le plat ; Bolet Satan (*Rubroboletus satanas*) — toxique (gastro) |
-| Cèpe d'été (*Boletus reticulatus*) | idem |
-| Girolle (*Cantharellus cibarius*) | Fausse girolle (*Hygrophoropsis aurantiaca*) ; Clitocybe de l'olivier (*Omphalotus olearius*) — toxique (gastro) |
-| Morille (*Morchella* spp.) | Fausse morille (*Gyromitra esculenta*) — **mortelle** (gyromitrine) |
-| Bolet bai (*Imleria badia*) | Bolet subtomenteux (*Xerocomus subtomentosus*) — confusion fréquente (comestible) |
-| Lépiote élevée (*Macrolepiota procera*) | Lépiote brun incarnat (*Lepiota brunneoincarnata*) — **mortelle** (amatoxines) ; Faux parasol (*Chlorophyllum molybdites*) — toxique (gastro) |
+`FungiTastic` (trop gros), `MO106` (petit), `Mushrooms-215` (trop petit),
+`FungiCLEF/FGVC8` (compétition, hors scope).
 
-- ~**12-16 classes** au total (le « + sosies » peut être ajusté selon la
-  disponibilité réelle dans DF20).
-- Règle de filtrage : ne garder que les classes ayant **assez d'images** (seuil à
-  fixer, ex. ≥ 50-100 images/classe) ; compléter/supprimer des sosies en conséquence.
+## 4. Classes : liste RÉELLE (validée après EDA DF20)
 
-## 5. Matériel & contraintes
+16 classes, **6076 images** au total (hors classe « pas de champi »).
 
-- Machine actuelle : **pas de GPU** → le fine-tuning se fait sur le **PC RTX 3090**.
-- Le code reste dans **ce dépôt** (monorepo) → portable, l'autre PC clone le repo,
-  installe les dépendances et télécharge DF20 localement (dans `data/` gitignoré).
+| Classe | Rôle | Images |
+|---|---|---|
+| *Boletus edulis* (cèpe de Bordeaux) | comestible | 901 |
+| *Boletus reticulatus* (cèpe d'été) | comestible | 343 |
+| *Cantharellus cibarius* (girolle) | comestible | 673 |
+| *Macrolepiota procera* (lépiote élevée) | comestible | 472 |
+| *Imleria badia* (bolet bai) | comestible | 925 |
+| *Morchella* spp. (morille) | comestible | 173 |
+| *Rubroboletus satanas* (bolet Satan) | toxique | 155 |
+| *Lepiota cristata* (lépiote crêtée) | toxique | 486 |
+| *Gyromitra esculenta* (fausse morille) | **mortel** | 189 |
+| *Lepiota castanea* (lépiote châtain) | **mortel** | 198 |
+| *Tylopilus felleus* (bolet amer) | non-toxique | 358 |
+| *Hygrophoropsis aurantiaca* (fausse girolle) | non-toxique | 620 |
+| *Boletus subtomentosus* (bolet subtomenteux) | non-toxique | 198 |
+| *Boletus pinophilus* (cèpe des pins) | non-toxique | 70 |
+| *Chlorophyllum rachodes* (lépiote déguenillée) | non-toxique | 281 |
+| *Verpa bohemica* (verpe de Bohême) | non-toxique | 34 |
 
-## 6. Structure du code (monorepo)
+**Ajustements vs la liste initiale (appris de l'EDA)** :
+- *Omphalotus olearius* : absent de DF20 → la girolle est couverte par
+  *Hygrophoropsis aurantiaca* (620).
+- *Chlorophyllum molybdites* : absent (espèce nord-américaine) → remplacé par
+  *Chlorophyllum rachodes* (281) + les petites lépiotes mortelles.
+- *Xerocomus subtomentosus* : présent sous l'ancien nom *Boletus subtomentosus* (198).
+- *Lepiota brunneoincarnata* (44) : remplacée par *Lepiota castanea* (198, mortelle),
+  mieux représentée.
+- Morille : *esculenta* (142) + *conica* (31) fusionnées en « *Morchella* spp. » (173).
+- Classes faibles : *Verpa bohemica* (34) et *Boletus pinophilus* (70) — seuil à
+  réévaluer selon les premiers résultats.
+
+## 5. Matériel
+
+- **RTX 3090 (24 Go)** — CUDA disponible. Le code vit dans **ce dépôt** (monorepo),
+  l'env Poetry est installé sur cette machine.
+- **torch 2.11.0+cu128** (stable, installé depuis l'index PyTorch cu128).
+- ⚠️ **cuDNN planté** (`Invalid handle. Cannot load symbol cudnnGetVersion`) quel que
+  soit torch/cuDNN (testé cu130 ET cu128) → probablement le **driver 595.99.02
+  (CUDA 13.2, bêta)** incompatible avec cuDNN 9.x. Workaround :
+  `torch.backends.cudnn.enabled = False` (kernels CUDA natifs, ~10-20 % plus lents).
+  À réexaminer après une mise à jour du driver NVIDIA.
+
+## 6. Structure du code
 
 ```
-src/champiquest/
-  data/          # partie 1 — inchangé
-  features/      # partie 1 — inchangé
-  models/        # partie 1 — inchangé
-  vision/        # partie 2 — NOUVEAU
-    __init__.py
-    datasets.py  # chargement DF20, split par observation, augmentations
-    models.py    # backbone pré-entraîné + tête de classification
-    train.py     # boucle de fine-tuning (AMP, scheduler, early stopping)
-    evaluate.py  # accuracy, macro-F1, matrice de confusion, par-classe
-    explain.py   # Grad-CAM
-    predict.py   # inference sur 1 image (+ seuil d'abstention)
+src/champiquest/vision/
+  __init__.py
+  datasets.py  # chargement DF20 + COCO, split par observation, augmentations
+  models.py    # backbone pré-entraîné + tête de classification (N+1)
+  train.py     # boucle de fine-tuning (AMP, scheduler, early stopping)
+  evaluate.py  # accuracy, macro-F1, matrice de confusion, par-classe
+  decision.py  # calibration (temperature scaling) + matrice de coût + abstention
+  explain.py   # Grad-CAM
+  predict.py   # inference end-to-end (photo(s) → décision)
+configs/vision.yaml   # classes, hyperparamètres, coûts
 data/raw/df20/        # images (gitignoré)
-configs/vision.yaml   # liste des classes (cibles + sosies), hyperparamètres
-reports/partie-2-reconnaissance-image.md   # ce document
+data/raw/coco/        # négatifs (gitignoré)
+reports/partie-2-reconnaissance-image.md
 ```
 
-## 7. Pipeline de fine-tuning
+## 7. Pipeline
 
-1. **Télécharger DF20** (sur le PC GPU), filtrer sur nos classes.
-2. **Split par observation/spécimen** (pas par image) : plusieurs photos d'un même
-   champignon partagent le même identifiant d'observation → elles ne doivent jamais
-   être réparties entre train et test (fuite). Même rigueur que la partie 1.
-3. **Backbone pré-entraîné ImageNet** + nouvelle tête de classification (nombre de
-   classes = nos espèces). Défaut : `ResNet50` ou `EfficientNet-B0` ; alternatives à
-   tester si le temps le permet : `ConvNeXt-Tiny`, `ViT-B/16` (souvent meilleurs en
-   classification fine-grained).
-4. **Fine-tuning complet** (toutes les couches) avec un **learning rate bas**
-   (ex. 1e-4), car on part de poids ImageNet.
-5. **Augmentations** : random resized crop, flip horizontal, color jitter ;
-   éventuellement MixUp/CutMix si le surapprentissage apparaît.
-6. **Optimisation** : AdamW, scheduler cosinus, **mixed precision (AMP)** sur 3090,
-   early stopping sur la macro-F1 de validation.
+1. Télécharger DF20 (sous-ensemble de nos classes) + COCO.
+2. **EDA** : nombre d'images/classe, distribution, échantillons visuels.
+3. **Split par observation** (pas par image) → anti-fuite.
+4. Backbone pré-entraîné + tête **N+1 classes** (espèces + « pas de champi »).
+5. **Fine-tuning** complet, LR bas (~1e-4), augmentations (random resized crop,
+   flip, color jitter), AdamW + cosinus + AMP, early stopping sur macro-F1.
+6. **Calibration** (temperature scaling) sur un split de validation dédié.
+7. **Évaluation** : métriques + matrice de confusion + décision à coût.
 
-## 8. Méthodologie
+## 8. Sécurité : calibration + coût asymétrique + abstention
 
-- **Split** : train / validation / test par **observation** (stratifié par espèce si
-  possible). Le test n'est touché qu'à la fin.
-- **Métriques** : accuracy top-1, **macro-F1** (le jeu est déséquilibré : cèpes et
-  girolles sur-représentés), précision/rappel **par classe**, matrice de confusion
-  (lire directement les confusions cible↔sosie).
-- **Gestion du déséquilibre** : poids de classe ou focal loss.
-- **MLflow** : log hyperparamètres, métriques, matrice de confusion, artefacts
-  (modèle, exemples Grad-CAM). Réutilise `mlflow-workflow.md`.
+C'est le cœur « produit » du modèle. Trois briques qui se combinent :
 
-## 9. Explicabilité
+1. **Calibration** : temperature scaling → `P(espèce|x)` est une vraie probabilité.
+2. **Matrice de coût** (à la décision, pas dans la loss) :
+   - coût(prédire *comestible* | vrai *toxique*) = **élevé** (ex. 10)
+   - coût(prédire *toxique* | vrai *comestible*) = **faible** (ex. 1)
+   - coût(correct) = 0
+3. **Décision bayésienne** : on prédit la classe qui minimise le coût attendu
+   `Σ_y P(y|x)·coût(c,y)`.
 
-**Grad-CAM** sur des exemples de test — en particulier sur les paires cible↔sosie
-pour montrer *où* le modèle regarde (chapeau, pied, lamelles…). Continuité avec le
-SHAP de la partie 1 : « on explique nos modèles, pas seulement leurs scores ».
+**Flux de décision final** :
+1. si la classe « pas de champi » domine → **rejet** (« je ne vois pas de champignon ») ;
+2. sinon → décision espèce avec la matrice de coût : **comestible** / **toxique** /
+   **abstention** (si confiance trop faible).
 
-## 10. Bonus (si le temps le permet)
+Le déséquilibre de classes, lui, se gère pendant l'entraînement (poids de classe /
+focal loss) — orthogonal au coût asymétrique.
 
-- **Abstention « je ne sais pas »** : seuil de confiance sous lequel le modèle
-  refuse de répondre. Très pertinent pour une app de cueillette (mieux vaut ne rien
-  dire que se tromper). Mesurable via la courbe *coverage vs accuracy*.
-- **Lien partie 1 ↔ partie 2** : l'app finale combine « météo = ça pousse ici »
-  (partie 1) + « l'image confirme l'espèce » (partie 2).
-- ~~Classification hiérarchique genre→espèce~~ : over-engineering pour le MVP, écarté.
+## 9. Fusion multi-vues
 
-## 11. Dépendances à ajouter
+- **MVP** : le modèle est **mono-photo** ; au moment de l'inférence on **agrège** les
+  prédictions des N photos (moyenne des logits). Aucun entraînement multi-vue.
+- **Option (stretch)** : entraîner un **set classifier** faiblement supervisé via
+  l'`observation_id` de DF20 (N photos → N embeddings → agrégation → 1 prédiction,
+  supervisée par le label d'observation). Pas besoin de labels de vue.
+- **Précision** : l'`observation_id` garantit *même espèce* (pas forcément *même
+  individu* : une observation peut couvrir un groupe). C'est suffisant — même
+  bénéfique — pour l'agrégation.
+- Le **guidage par vue** (demander chapeau/lamelles/pied) relève de l'API, pas de
+  l'entraînement ; l'auto-reconnaissance de vue est un stretch (CLIP zero-shot).
 
-À valider avant ajout au `pyproject.toml` (règle 2) :
+## 10. Contrat d'API (pour la soutenance, implémenté en partie 3)
 
-- `torch` (+ build CUDA sur le PC GPU)
+```
+POST /api/identify
+  body: { "images": [ { "data": "<base64>", "view": "cap|gills|stem|whole|auto" } ] }
+  → 200 {
+    "status": "ok" | "no_mushroom" | "low_confidence",
+    "decision": "edible" | "toxic" | "abstain",   # issue de la matrice de coût
+    "top_predictions": [
+      { "species": "Boletus edulis", "common_name": "Cèpe de Bordeaux",
+        "probability": 0.87, "edible": true }
+    ],
+    "confidence": 0.87,
+    "calibrated": true
+  }
+```
+
+- `images[]` accepte 1..N photos du même spécimen → le serveur agrège (moyenne logits).
+- `view` est **optionnel** (guidage utilisateur) ; la valeur `auto` = pas de vue fournie.
+- `status` : `no_mushroom` si la classe négative domine, `low_confidence` si
+  abstention, `ok` sinon. `decision` n'est `edible` que si la confiance ET le coût le
+  justifient.
+
+## 11. Métriques
+
+- accuracy top-1, **macro-F1** (jeu déséquilibré), précision/rappel **par classe**.
+- **Matrice de confusion** : lire directement les confusions cible↔sosie.
+- **Coverage vs accuracy** pour l'abstention (on refuse, on mesure le gain).
+- **Taux d'erreur dangereuse** (comestible prédit = toxique réel) → la métrique clé
+  de sécurité, à minimiser en priorité.
+
+## 12. Explicabilité
+
+**Grad-CAM** sur des exemples de test, en particulier les paires cible↔sosie, pour
+montrer *où* le modèle regarde (chapeau, lamelles, pied…). Continuité avec le SHAP
+de la partie 1.
+
+## 13. Dépendances à ajouter
+
+À valider avant ajout au `pyproject.toml` :
+
+- `torch` (build CUDA)
 - `torchvision`
-- `timm` (backbones pré-entraînés) — ou torchvision seul si on s'en tient à ResNet/EfficientNet
-- éventuellement `albumentations` (augmentations) — ou torchvision.transforms
+- `timm` (backbones pré-entraînés : ConvNeXt, ViT-21k, Swin, DINOv2…)
 
-## 12. Feuille de route
+(Pillow arrive avec torchvision.)
 
-1. [ ] Vérifier la disponibilité de **chaque classe** dans DF20 (nombre d'images),
-       fixer le seuil minimal et finaliser la liste cibles+sosies.
-2. [ ] Créer `configs/vision.yaml` (classes, hyperparamètres).
-3. [ ] Créer le squelette `champiquest.vision/` (`__init__.py` + modules vides).
-4. [ ] Sur le PC GPU : clone du repo, env Poetry + CUDA, téléchargement DF20.
-5. [ ] `datasets.py` : chargement, split par observation, augmentations.
-6. [ ] `train.py` + `models.py` : fine-tuning, MLflow.
-7. [ ] `evaluate.py` : métriques + matrice de confusion.
-8. [ ] `explain.py` : Grad-CAM sur les paires cible↔sosie.
-9. [ ] Bonus : abstention « je ne sais pas ».
+## 14. Feuille de route
 
-## 13. Questions ouvertes
+1. [x] Rapport de cadrage + squelette `champiquest.vision/`.
+2. [x] Installer l'env Poetry + ajouter torch/torchvision/timm.
+3. [x] Télécharger DF20 (nos classes) + COCO (négatifs).
+4. [x] EDA : nb images/classe, disponibilité des classes, échantillons.
+5. [x] Finaliser la liste des classes (seuil d'images) + `configs/vision.yaml`.
+6. [x] `datasets.py` : chargement + split par observation + augmentations.
+7. [x] `models.py` + `train.py` : fine-tuning ConvNeXt-Base, MLflow.
+8. [x] `evaluate.py` + `decision.py` : calibration, coût, abstention.
+9. [ ] `explain.py` : Grad-CAM.
+10. [ ] `predict.py` + contrat d'API.
 
-- Seuil minimal d'images par classe (50 ? 100 ?).
-- Backbone de départ (ResNet50/EfficientNet-B0, ou directement ConvNeXt/ViT ?).
-- Faut-il inclure des **sosies non toxiques** (ex. bolet subtomenteux) pour montrer
-  les confusions « inoffensives » en plus des toxiques ?
-- `timm` ou `torchvision` seul ?
+## 15. Questions ouvertes
+
+- Seuil minimal d'images/classe (après l'EDA, selon les résultats).
+- Backbone final : ConvNeXt-Base vs ViT-B/16-21k (à comparer) ; DINOv2 en option.
+- Set classifier multi-vue : stretch ou non ?
+- Auto-reconnaissance de vue (CLIP) : stretch ou non ?
+
+## 16. Résultats (premier entraînement complet)
+
+ConvNeXt-Base (384px), 20 epochs, AdamW lr 1e-4, batch 32, AMP, poids de classe.
+
+| Métrique | Valeur |
+|---|---|
+| test accuracy | **0.896** |
+| test macro-F1 | **0.847** |
+| température calibrée | 1.426 (sur-confiance → adoucissement) |
+| abstentions | 74/1073 (6,9 %) |
+| erreur dangereuse (argmax) | 1,4 % |
+| erreur dangereuse (coût) | **0,0 %** |
+
+**Confusions principales (bénignes)** : cèpes ↔ bolet bai ↔ bolet amer ↔ bolet
+subtomenteux ; girolle ↔ fausse girolle. Les 2 confusions dangereuses
+(*Gyromitra esculenta* et *Rubroboletus satanas* → girolle) sont **éliminées par la
+matrice de coût** (d'où 0,0 %).
+
+Graphes : `reports/partie2_confusion_matrix.png`, `partie2_per_class_metrics.png`,
+`partie2_training_curves.png` (aussi loggés dans MLflow).
