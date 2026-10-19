@@ -83,7 +83,7 @@ def train(config, epochs, lr, batch_size, backbone, input_size, device, seed):
         batch_size=batch_size, input_size=input_size, seed=seed, config=config
     )
     classes, label_to_idx, label_to_danger = datasets.load_classes(config)
-    num_classes = len(classes) + 1  # + « pas de champi »
+    num_classes = datasets.n_classes_total(config)  # espèces + no_mushroom + other_fungus
 
     model = models.build_model(backbone, num_classes=num_classes, pretrained=True).to(device)
 

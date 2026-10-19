@@ -230,23 +230,28 @@ de la partie 1.
 - Set classifier multi-vue : stretch ou non ?
 - Auto-reconnaissance de vue (CLIP) : stretch ou non ?
 
-## 16. Résultats (premier entraînement complet)
+## 16. Résultats (modèle final : 18 classes avec other_fungus)
 
 ConvNeXt-Base (384px), 20 epochs, AdamW lr 1e-4, batch 32, AMP, poids de classe.
+18 sorties : 16 espèces + `no_mushroom` (COCO) + `other_fungus` (980 champignons courants).
 
 | Métrique | Valeur |
 |---|---|
-| test accuracy | **0.896** |
+| test accuracy | 0.886 |
 | test macro-F1 | **0.847** |
-| température calibrée | 1.426 (sur-confiance → adoucissement) |
-| abstentions | 74/1073 (6,9 %) |
-| erreur dangereuse (argmax) | 1,4 % |
-| erreur dangereuse (coût) | **0,0 %** |
+| température calibrée | 1.440 (sur-confiance → adoucissement) |
+| abstentions | 94/1220 (7,7 %) |
+| erreur dangereuse (argmax → coût) | 2,1 % → **0,0 %** |
+| champignon étranger → comestible (argmax → coût) | 5,4 % → **0,0 %** |
 
 **Confusions principales (bénignes)** : cèpes ↔ bolet bai ↔ bolet amer ↔ bolet
-subtomenteux ; girolle ↔ fausse girolle. Les 2 confusions dangereuses
-(*Gyromitra esculenta* et *Rubroboletus satanas* → girolle) sont **éliminées par la
-matrice de coût** (d'où 0,0 %).
+subtomenteux ; girolle ↔ fausse girolle. La classe `other_fungus` + la matrice de coût
+éliminent à la fois les toxiques prédits comestibles ET les champignons étrangers prédits
+comestibles (0,0 %).
+
+**Ajout clé** (validé par l'utilisateur) : la classe `other_fungus` (980 images, 35 genres
+courants hors de nos cibles) résout le problème du « monde fermé » — sans elle, ~5,4 % des
+champignons étrangers étaient annoncés comestibles.
 
 Graphes : `reports/partie2_confusion_matrix.png`, `partie2_per_class_metrics.png`,
 `partie2_training_curves.png` (aussi loggés dans MLflow).

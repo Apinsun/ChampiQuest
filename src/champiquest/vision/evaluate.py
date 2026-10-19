@@ -110,7 +110,7 @@ def main() -> None:
     config = ckpt["config"]
     classes: list[str] = ckpt["classes"]
     danger_of: dict[str, str] = ckpt["danger"]
-    num_classes = len(classes) + 1
+    num_classes = len(classes) + 2
 
     _, val_dl, test_dl, _ = datasets.build_dataloaders(
         config=config, seed=config["train"]["seed"]
@@ -131,11 +131,14 @@ def main() -> None:
 
     edible_idx = {i for i, c in enumerate(classes) if danger_of[c] == "comestible"}
     dangerous_idx = {i for i, c in enumerate(classes) if danger_of[c] in ("toxique", "mortel")}
+    no_mushroom_idx = len(classes)
+    other_fungus_idx = len(classes) + 1
 
     dec = CostDecision(
         classes,
         danger_of,
-        no_mushroom_idx=num_classes - 1,
+        no_mushroom_idx=no_mushroom_idx,
+        other_fungus_idx=other_fungus_idx,
         cost_edible_as_toxic=config["decision"]["cost_edible_as_toxic"],
         cost_toxic_as_edible=config["decision"]["cost_toxic_as_edible"],
         abstain_threshold=config["decision"]["abstain_threshold"],
@@ -149,7 +152,12 @@ def main() -> None:
     err_cost = float((edible_claim & dangerous_actual).sum()) / max(1, dangerous_actual.sum())
     n_abstain = sum(1 for d in decisions if d["decision"] == "abstain")
 
-    class_names = classes + ["no_mushroom"]
+    # monde ouvert : champignon étranger prédit comestible (argmax vs coût)
+    other_actual = test_labels == other_fungus_idx
+    other_as_edible_raw = float((other_actual & np.isin(y_pred_raw, list(edible_idx))).sum()) / max(1, other_actual.sum())
+    other_as_edible_cost = float((other_actual & edible_claim).sum()) / max(1, other_actual.sum())
+
+    class_names = classes + ["no_mushroom", "other_fungus"]
 
     # graphes
     fig_cm = plot_confusion_matrix(test_labels, y_pred_raw, class_names)
@@ -167,6 +175,8 @@ def main() -> None:
                 "dangerous_error_argmax": err_raw,
                 "dangerous_error_cost": err_cost,
                 "n_abstain": n_abstain,
+                "other_as_edible_argmax": other_as_edible_raw,
+                "other_as_edible_cost": other_as_edible_cost,
             }
         )
         mlflow.log_figure(fig_cm, "confusion_matrix.png")
@@ -175,6 +185,8 @@ def main() -> None:
     print(f"\ntest acc {acc:.3f} | macro-F1 {f1:.3f} | abstentions {n_abstain}/{len(test_labels)}")
     print(f"erreur dangereuse (argmax) : {err_raw:.3f}")
     print(f"erreur dangereuse (coût)   : {err_cost:.3f}")
+    print(f"champignon étranger → comestible (argmax) : {other_as_edible_raw:.3f}")
+    print(f"champignon étranger → comestible (coût)   : {other_as_edible_cost:.3f}")
     print(f"graphes : {REPORTS_DIR / 'partie2_confusion_matrix.png'} + per_class_metrics")
 
 

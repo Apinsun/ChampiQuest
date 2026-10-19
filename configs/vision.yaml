@@ -80,7 +80,12 @@ classes:
 # Classe négative « je ne vois pas de champi » (images COCO)
 no_mushroom:
   label: no_mushroom
-  n_negatives: 3000
+  n_negatives: 1000
+
+# Classe « autre champignon » (espèces courantes hors de nos cibles, images DF20)
+other_fungus:
+  label: other_fungus
+  n_images: 980
 
 # Modèle
 model:

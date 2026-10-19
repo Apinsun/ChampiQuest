@@ -27,9 +27,11 @@ REPO = Path(__file__).resolve().parents[3]
 DF20_IMG_DIR = REPO / "data" / "raw" / "df20" / "extracted_300px"
 METADATA_CSV = REPO / "data" / "raw" / "df20" / "our_classes_metadata.csv"
 NEGATIVES_MANIFEST = REPO / "data" / "raw" / "coco" / "negatives_manifest.txt"
+OTHER_FUNGUS_MANIFEST = REPO / "data" / "raw" / "df20" / "other_fungus_paths.txt"
 CONFIG_PATH = REPO / "configs" / "vision.yaml"
 
 NO_MUSHROOM = "no_mushroom"
+OTHER_FUNGUS = "other_fungus"
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
@@ -55,6 +57,12 @@ def load_classes(config: dict | None = None) -> tuple[list[str], dict[str, int],
     label_to_idx = {c: i for i, c in enumerate(classes)}
     label_to_danger = {c["name"]: c["danger"] for c in config["classes"]}
     return classes, label_to_idx, label_to_danger
+
+
+def n_classes_total(config: dict | None = None) -> int:
+    """Nombre total de sorties : espèces + no_mushroom + other_fungus."""
+    classes, _, _ = load_classes(config)
+    return len(classes) + 2
 
 
 def load_metadata() -> pd.DataFrame:
@@ -135,8 +143,30 @@ def build_splits(
         )
     neg_df = pd.DataFrame(neg_rows)
 
+    # autres champignons courants (hors cibles) : répartition aléatoire par image
+    other_files = [p.strip() for p in open(OTHER_FUNGUS_MANIFEST) if p.strip()]
+    rng = np.random.default_rng(seed + 1)
+    rng.shuffle(other_files)
+    n = len(other_files)
+    n_test = max(1, round(n * test_frac))
+    n_val = max(1, round(n * val_frac))
+    other_rows = []
+    for i, f in enumerate(other_files):
+        split = "test" if i < n_test else "val" if i < n_test + n_val else "train"
+        other_rows.append(
+            {
+                "file": str(DF20_IMG_DIR / f.lower()),  # .JPG → .jpg
+                "label_idx": len(classes) + 1,  # index « autre champignon »
+                "gbifID": f"other_{i}",
+                "class_label": OTHER_FUNGUS,
+                "danger": "other",
+                "split": split,
+            }
+        )
+    other_df = pd.DataFrame(other_rows)
+
     cols = ["file", "label_idx", "gbifID", "class_label", "danger", "split"]
-    full = pd.concat([df[cols], neg_df[cols]], ignore_index=True)
+    full = pd.concat([df[cols], neg_df[cols], other_df[cols]], ignore_index=True)
     train_df = full[full["split"] == "train"].reset_index(drop=True)
     val_df = full[full["split"] == "val"].reset_index(drop=True)
     test_df = full[full["split"] == "test"].reset_index(drop=True)
@@ -214,7 +244,7 @@ if __name__ == "__main__":
 
     config = load_config()
     classes, label_to_idx, label_to_danger = load_classes(config)
-    print(f"classes : {len(classes)} + 1 ('{NO_MUSHROOM}') = {len(classes) + 1} sorties")
+    print(f"classes : {len(classes)} + 2 ('{NO_MUSHROOM}', '{OTHER_FUNGUS}') = {n_classes_total(config)} sorties")
 
     train_df, val_df, test_df = build_splits(config=config)
     check_no_leakage(train_df, val_df, test_df)
