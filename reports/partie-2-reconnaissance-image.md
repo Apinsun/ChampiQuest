@@ -220,8 +220,8 @@ de la partie 1.
 6. [x] `datasets.py` : chargement + split par observation + augmentations.
 7. [x] `models.py` + `train.py` : fine-tuning ConvNeXt-Base, MLflow.
 8. [x] `evaluate.py` + `decision.py` : calibration, coût, abstention.
-9. [ ] `explain.py` : Grad-CAM.
-10. [ ] `predict.py` + contrat d'API.
+9. [x] `explain.py` : Grad-CAM.
+10. [x] `predict.py` + contrat d'API.
 
 ## 15. Questions ouvertes
 
@@ -255,3 +255,27 @@ champignons étrangers étaient annoncés comestibles.
 
 Graphes : `reports/partie2_confusion_matrix.png`, `partie2_per_class_metrics.png`,
 `partie2_training_curves.png` (aussi loggés dans MLflow).
+
+## 17. Workflow « nouvelle data »
+
+Le pipeline est modulaire et re-exécutable : ajouter de la data = modifier la config ou
+les fichiers de données, puis relancer les commandes. `configs/vision.yaml` est la
+**source de vérité** des classes ; MLflow **versionne chaque run** → comparaison avant/après.
+
+### Partie 2 (vision)
+
+| Cas | Actions |
+|---|---|
+| Plus d'images d'une espèce existante | ajouter aux images + `our_classes_metadata.csv` → `datasets` → `train` → `evaluate` |
+| Nouvelle espèce (nouvelle classe) | ajouter à `configs/vision.yaml` + images + metadata → `datasets` → `train` (⚠️ le nb de sorties change) → `evaluate` |
+| Plus de `other_fungus` / négatifs | régénérer `other_fungus_manifest.csv` / `negatives_manifest.txt` → relancer |
+
+- Le split est reproductible (seed=42) mais change naturellement avec plus de data.
+- Exemple déjà réalisé : l'ajout de la classe `other_fungus` (nouveau manifest + config
+  + réentraînement).
+
+### Partie 1 (météo → pousse)
+
+`configs/species.yaml` → `gbif.py` (occurrences) → `environnement.py` (météo/sol,
+**incrémental** : les points déjà téléchargés sont sautés) → `make_dataset.py` →
+`evaluate.py`. Nouvelle espèce ou zone élargie = ajouter à la config + relancer la cascade.

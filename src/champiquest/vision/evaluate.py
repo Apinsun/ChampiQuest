@@ -120,6 +120,8 @@ def main() -> None:
     val_logits, val_labels = predict(model, val_dl, device)
     T = calibrate_temperature(val_logits, val_labels)
     print(f"température calibrée : {T:.3f}")
+    (REPO / "data" / "models").mkdir(parents=True, exist_ok=True)
+    (REPO / "data" / "models" / "temperature.txt").write_text(f"{T:.6f}")
 
     # test
     test_logits, test_labels = predict(model, test_dl, device)

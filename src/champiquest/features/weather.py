@@ -76,19 +76,20 @@ def compute_weather_features(daily: pd.DataFrame, obs_date: pd.Timestamp) -> dic
 
 
 def compute_soil_features(daily: pd.DataFrame, obs_date: pd.Timestamp) -> dict:
-    """Calcule les features de température de surface et humidité du sol (NASA POWER).
+    """Calcule les features de température et humidité du sol (Open-Meteo, 0-7 cm).
 
     Paramètres
     ----------
-    daily : DataFrame indexé par date, colonnes NASA POWER (``ts``, ``gwet_top``).
+    daily : DataFrame indexé par date, colonnes Open-Meteo
+        (``soil_temperature_0_to_7cm_mean``, ``soil_moisture_0_to_7cm_mean``).
     obs_date : date de l'observation (on regarde les jours précédents, jamais le jour J).
 
     Retourne un dict de features numériques.
     """
     sub = daily.loc[: obs_date - pd.Timedelta(days=1)]
 
-    ts = sub["ts"]
-    gwet = sub["gwet_top"]
+    ts = sub["soil_temperature_0_to_7cm_mean"]
+    gwet = sub["soil_moisture_0_to_7cm_mean"]
 
     # Réchauffement du sol : température (J-7) − (J-30). Positif = le sol se
     # réchauffe (déclencheur printanier de la morille), négatif = il refroidit.
