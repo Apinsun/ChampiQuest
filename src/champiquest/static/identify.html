@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>ChampiQuest — identification</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f4f6f8; color: #222; }
+    header { background: #1e2a38; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header a { color: #9cc3ff; text-decoration: none; font-size: 14px; }
+    main { max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    .zone { border: 2px dashed #bbb; border-radius: 10px; padding: 26px; text-align: center; background: #fff; }
+    .zone img { max-width: 300px; max-height: 300px; margin: 14px auto; display: none; border-radius: 6px; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 15px; margin: 6px; }
+    .btn.primary { background: #1e88e5; color: #fff; }
+    .btn.ghost { background: #eee; color: #333; }
+    #result { margin-top: 18px; text-align: left; }
+    .decision { font-size: 20px; font-weight: 600; padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; }
+    .pred { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border-radius: 6px; margin: 6px 0; }
+    .pred .bar { height: 10px; border-radius: 5px; background: #1e88e5; }
+    .badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; color: #fff; white-space: nowrap; }
+    .hint { color: #777; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>🧫 ChampiQuest — identification</strong>
+    <a href="/">← retour à la carte</a>
+  </header>
+  <main>
+    <div class="zone">
+      <p class="hint">Prenez une photo du champignon (chapeau + pied). L'image est redimensionnée à 1 MPx avant envoi.</p>
+      <input type="file" id="file" accept="image/*" style="display:none">
+      <button class="btn primary" onclick="document.getElementById('file').click()">📷 Choisir une photo</button>
+      <br>
+      <img id="preview" alt="aperçu">
+      <div id="result"></div>
+    </div>
+  </main>
+  <script>
+    const MAX_PIXELS = 1000000; // 1 MPx
+    let currentDataUrl = null;
+    const fileInput = document.getElementById('file');
+    const preview = document.getElementById('preview');
+    const result = document.getElementById('result');
+
+    const DANGER = {
+      comestible:   { label: 'comestible',  color: '#2e7d32' },
+      non_toxique:  { label: 'non toxique', color: '#757575' },
+      toxique:      { label: 'toxique',     color: '#ef6c00' },
+      mortel:       { label: 'mortel',      color: '#c62828' },
+    };
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, Math.sqrt(MAX_PIXELS / (img.width * img.height)));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          currentDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          preview.src = currentDataUrl;
+          preview.style.display = 'block';
+          identify();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function identify() {
+      result.innerHTML = '<p class="hint">Identification en cours…</p>';
+      try {
+        const resp = await fetch('/identify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images: [currentDataUrl] }),
+        });
+        const data = await resp.json();
+        render(data);
+      } catch (err) {
+        result.innerHTML = '<p style="color:#c62828">Erreur : ' + err + '</p>';
+      }
+    }
+
+    function decisionLabel(d) {
+      return {
+        edible: '🟢 Comestible', dangerous: '🔴 Toxique / mortel', neutral: '⚪ Non toxique',
+        other_fungus: '🍄 Autre champignon', no_mushroom: '❌ Pas de champignon',
+        abstain: '❓ Confiance insuffisante',
+      }[d] || d;
+    }
+
+    function render(data) {
+      const bg = data.decision === 'edible' ? '#e8f5e9;color:#2e7d32'
+               : data.decision === 'dangerous' ? '#ffebee;color:#c62828'
+               : '#f5f5f5;color:#555';
+      let html = '<div class="decision" style="background:' + bg + '">' + decisionLabel(data.decision) + '</div>';
+      html += '<button class="btn ghost" onclick="reset()">↺ Nouvelle image</button>';
+
+      for (const p of data.top_predictions) {
+        const d = DANGER[p.danger] || { label: p.danger || 'autre', color: '#9e9e9e' };
+        html += '<div class="pred">' +
+          '<strong style="min-width:170px">' + (p.common_name || p.species) + '</strong>' +
+          '<div style="flex:1;background:#eee;border-radius:5px">' +
+            '<div class="bar" style="width:' + Math.round(p.probability * 100) + '%"></div></div>' +
+          '<span style="min-width:52px;text-align:right">' + (p.probability * 100).toFixed(1) + '%</span>' +
+          '<span class="badge" style="background:' + d.color + '">' + d.label + '</span>' +
+          '</div>';
+      }
+      result.innerHTML = html;
+    }
+
+    function reset() {
+      fileInput.value = '';
+      currentDataUrl = null;
+      preview.style.display = 'none';
+      preview.src = '';
+      result.innerHTML = '';
+    }
+  </script>
+</body>
+</html>

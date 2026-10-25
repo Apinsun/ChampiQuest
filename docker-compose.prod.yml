@@ -1,0 +1,10 @@
+# Déploiement de l'API ChampiQuest depuis GHCR (image pré-construite par la CI/CD).
+# Le volume `./data` (modèles + météo + cartes) est monté depuis la machine hôte.
+services:
+  api:
+    image: ghcr.io/apinsun/champiquest:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

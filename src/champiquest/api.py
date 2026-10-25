@@ -149,6 +149,12 @@ def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/demo")
+def demo_page() -> FileResponse:
+    """Page de démo : upload d'une photo → classification (modèle vision)."""
+    return FileResponse(STATIC_DIR / "identify.html")
+
+
 @app.post("/identify", response_model=IdentifyResponse)
 def identify(req: IdentifyRequest) -> IdentifyResponse:
     images = [_decode(im) for im in req.images]
