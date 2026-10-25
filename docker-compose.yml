@@ -1,0 +1,15 @@
+# Démarrage de l'API ChampiQuest.
+#
+# En local (dev) : `build: .` construit l'image depuis le Dockerfile.
+# Pour déployer depuis GHCR : remplace `build: .` par
+#   image: ghcr.io/<owner>/<repo>:latest
+# et garde le volume `./data` (modèles + météo + cartes).
+services:
+  api:
+    build: .
+    image: champiquest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

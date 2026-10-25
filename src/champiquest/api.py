@@ -63,9 +63,17 @@ class GrowthRequest(BaseModel):
     date: str = Field(..., description="date cible YYYY-MM-DD (aujourd'hui → J+16)")
 
 
-# --- Dépendances : chargées une seule fois au démarrage ---
+# --- Dépendances : chargées paresseusement (le modèle torch n'est pas chargé à l'import) ---
 
-_predictor = Predictor()  # charge le modèle torch (partie 2)
+_predictor: Predictor | None = None
+
+
+def _get_predictor() -> Predictor:
+    """Charge le modèle vision une seule fois, à la première requête /identify."""
+    global _predictor
+    if _predictor is None:
+        _predictor = Predictor()
+    return _predictor
 
 
 def _decode(im: str) -> bytes:
@@ -144,7 +152,7 @@ def index() -> FileResponse:
 @app.post("/identify", response_model=IdentifyResponse)
 def identify(req: IdentifyRequest) -> IdentifyResponse:
     images = [_decode(im) for im in req.images]
-    result = _predictor.identify(images, req.views)
+    result = _get_predictor().identify(images, req.views)
     return IdentifyResponse(**result)
 
 

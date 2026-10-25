@@ -1,0 +1,13 @@
+# Ne pas envoyer dans le contexte de build Docker (ni copier dans l'image).
+# data/ est critique : il contient le tarball DF20 (6+ Go) et les modèles.
+data/
+mlruns/
+mlartifacts/
+mlflow.db
+.git/
+.gitignore
+__pycache__/
+*.pyc
+reports/
+.env
+tests/

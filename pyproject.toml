@@ -39,3 +39,13 @@ fastapi = "^0.161.1"
 uvicorn = "^0.54.0"
 python-multipart = "^0.0.32"
 pyarrow = "<26"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
