@@ -124,6 +124,20 @@ son meilleur score)**, girolle +0.009, les espèces d'automne neutres.
 **réchauffement du sol** (Guo 2025), et l'**humidité du sol** (Boukary 2024) est le
 moteur principal de la fructification — le proxy précip−ET0 la sous-estimait.
 
+### ⚠️ Bascule NASA POWER → Open-Meteo (sol, pour la carte live)
+
+NASA POWER est de la **réanalyse** (MERRA-2) avec ~2-3 mois de délai → indisponible en
+temps réel. Pour la **carte de prédiction du jour** (partie 3), on a basculé les
+features sol sur **Open-Meteo** (`soil_temperature_0_to_7cm_mean`,
+`soil_moisture_0_to_7cm_mean`, ERA5-land), disponibles en **archive ET en forecast**.
+
+- Mêmes définitions de features : `temp_sol_J14`, `rechauffement_sol`, `humidite_sol_J30`.
+- **Résultat : AUC moyenne 0.761 vs 0.767 (NASA POWER)** → **pas de perte significative**
+  (−0.006, dans le bruit des folds LOOCV, σ ~0.1-0.18). Détail : cèpes 0.717 (+0.011),
+  lépiotes 0.796 (−0.033), girolle 0.744 (+0.014), morille 0.694 (−0.023),
+  bolet bai 0.770 (+0.004), cèpe d'été 0.846 (−0.007).
+- **Gain** : toutes les features sont désormais forecast-capables → carte live possible.
+
 ### Random search LightGBM (expérience) — `A_simple` conservé
 
 40 itérations de random search (espace orienté régularisation) sur 2 espèces :

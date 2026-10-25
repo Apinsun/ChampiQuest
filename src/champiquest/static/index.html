@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>ChampiQuest — carte de prédiction</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    #map { height: 78vh; }
+    .controls {
+      padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #ddd;
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+    }
+    .controls label { margin-right: 4px; }
+    #species { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+    #species label { font-size: 14px; cursor: pointer; }
+    .gradient {
+      width: 180px; height: 14px; border-radius: 3px; display: inline-block;
+      vertical-align: middle; border: 1px solid #bbb;
+      background: linear-gradient(to right, #30123b, #4145ab, #4675ed, #39a2fc,
+                                  #1bcfd4, #24eca6, #61fc6c, #a4fc3b, #d1e834, #f3c63a, #fe9b2d, #f36315, #d93806, #b11901, #7a0402);
+    }
+    .legend { font-size: 13px; color: #444; display: flex; align-items: center; gap: 8px; }
+    .hint { font-size: 12px; color: #777; }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <div>
+      <label for="date">Date :</label>
+      <input type="range" id="date" min="0" max="3" step="1" value="0">
+      <strong id="dateLabel"></strong>
+    </div>
+    <div>
+      <span class="hint">Espèces (aucune cochée = tout confondu) :</span>
+      <div id="species"></div>
+    </div>
+    <div class="legend">
+      <span>probabilité de pousse</span>
+      <span id="vmin">–</span>
+      <span class="gradient"></span>
+      <span id="vmax">–</span>
+    </div>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    const BBOX = [[47.3, 6.4], [49.3, 8.7]];
+    const SPECIES = [
+      ["boletus_edulis", "Cèpe de Bordeaux"],
+      ["macrolepiota_procera", "Lépiote élevée"],
+      ["cantharellus_cibarius", "Girolle"],
+      ["morchella", "Morille"],
+      ["imleria_badia", "Bolet bai"],
+      ["boletus_reticulatus", "Cèpe d'été"],
+    ];
+
+    const DATES = [];
+    for (let i = 0; i < 4; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      DATES.push(d.toISOString().slice(0, 10));
+    }
+
+    const map = L.map("map").setView([48.3, 7.55], 8);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap",
+    }).addTo(map);
+
+    let overlay = null;
+
+    function query() {
+      const checked = [...document.querySelectorAll("#species input:checked")].map(c => c.value);
+      return checked.length ? "&species=" + checked.join(",") : "";
+    }
+
+    async function refresh() {
+      const date = DATES[parseInt(document.getElementById("date").value, 10)];
+      const q = query();
+      const url = "/map?date=" + date + q + "&_=" + Date.now();
+
+      if (overlay) { overlay.remove(); overlay = null; }
+
+      // légende : on récupère l'échelle réellement utilisée
+      let outOfSeason = false;
+      try {
+        const resp = await fetch("/map/meta?date=" + date + q);
+        if (!resp.ok) {
+          outOfSeason = true;
+          document.getElementById("vmin").textContent = "–";
+          document.getElementById("vmax").textContent = "–";
+        } else {
+          const meta = await resp.json();
+          document.getElementById("vmin").textContent = meta.vmin.toFixed(2);
+          document.getElementById("vmax").textContent = meta.vmax.toFixed(2);
+        }
+      } catch (e) {
+        outOfSeason = true;
+      }
+
+      if (outOfSeason) {
+        document.getElementById("dateLabel").textContent = date + " — hors saison";
+        return;
+      }
+
+      overlay = L.imageOverlay(url, BBOX, { opacity: 0.8 }).addTo(map);
+      document.getElementById("dateLabel").textContent = date;
+    }
+
+    const spDiv = document.getElementById("species");
+    SPECIES.forEach(([key, name]) => {
+      const lab = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.value = key;
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + name));
+      spDiv.appendChild(lab);
+    });
+
+    document.getElementById("date").addEventListener("input", refresh);
+    spDiv.addEventListener("change", refresh);
+    refresh();
+  </script>
+</body>
+</html>
