@@ -27,7 +27,7 @@ import pandas as pd
 
 import champiquest.weather_store as ws
 from champiquest.growth import MODELS_DIR, SPECIES, compute_features, fetch_era5, fetch_weather
-from champiquest.models.evaluate import DATASET
+from champiquest.models.constants import DATASET
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # src/champiquest/mapgen.py → racine
 MAPS_DIR = REPO_ROOT / "data" / "maps"

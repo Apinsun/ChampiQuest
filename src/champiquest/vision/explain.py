@@ -21,7 +21,7 @@ import matplotlib
 from PIL import Image
 
 from . import datasets
-from .evaluate import load_checkpoint, softmax
+from .models import load_checkpoint, softmax
 
 REPO = Path(__file__).resolve().parents[3]
 REPORTS_DIR = REPO / "reports"

@@ -20,7 +20,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from champiquest.models.evaluate import FULL_NUM_FEATURES, LGB_CONFIGS
+from champiquest.models.constants import FULL_NUM_FEATURES, LGB_CONFIGS
 from champiquest.models.mlflow_config import setup
 
 REPO_ROOT = Path(__file__).resolve().parents[3]

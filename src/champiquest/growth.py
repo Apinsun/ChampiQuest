@@ -15,7 +15,7 @@ import requests_cache
 from retry_requests import retry
 
 from champiquest.features.weather import compute_soil_features, compute_weather_features
-from champiquest.models.evaluate import PRUNED_NUM_FEATURES
+from champiquest.models.constants import PRUNED_NUM_FEATURES
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # src/champiquest/growth.py → racine du repo
 MODELS_DIR = REPO_ROOT / "data" / "models"

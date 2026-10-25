@@ -19,7 +19,8 @@ import lightgbm as lgb
 import mlflow
 from sklearn.metrics import roc_auc_score
 
-from champiquest.models.evaluate import LGB_CONFIGS, PRUNED_NUM_FEATURES, load_species
+from champiquest.models.constants import LGB_CONFIGS, PRUNED_NUM_FEATURES
+from champiquest.models.evaluate import load_species
 from champiquest.models.mlflow_config import setup
 
 REPO_ROOT = Path(__file__).resolve().parents[3]

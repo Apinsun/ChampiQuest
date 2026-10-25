@@ -13,7 +13,8 @@ import lightgbm as lgb
 import matplotlib.pyplot as plt
 import shap
 
-from champiquest.models.evaluate import CAT_FEATURE, FULL_NUM_FEATURES, LGB_CONFIGS, load_species
+from champiquest.models.constants import CAT_FEATURE, FULL_NUM_FEATURES, LGB_CONFIGS
+from champiquest.models.evaluate import load_species
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REPORTS = REPO_ROOT / "reports"

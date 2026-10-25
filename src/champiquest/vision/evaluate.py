@@ -24,8 +24,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import mlflow
 
-from . import datasets, models
+from . import datasets
 from .decision import CostDecision, calibrate_temperature
+from .models import load_checkpoint, softmax
 
 REPO = Path(__file__).resolve().parents[3]
 REPORTS_DIR = REPO / "reports"
@@ -41,13 +42,6 @@ def predict(model, loader, device) -> tuple[np.ndarray, np.ndarray]:
         all_logits.append(logits.cpu())
         all_labels.append(labels)
     return torch.cat(all_logits).numpy(), torch.cat(all_labels).numpy()
-
-
-def softmax(logits: np.ndarray, T: float = 1.0) -> np.ndarray:
-    z = logits / T
-    z = z - z.max(axis=1, keepdims=True)
-    e = np.exp(z)
-    return e / e.sum(axis=1, keepdims=True)
 
 
 def dangerous_error_rate(y_true: np.ndarray, y_pred: np.ndarray, edible_idx: set, dangerous_idx: set) -> float:
@@ -84,13 +78,6 @@ def plot_per_class_report(y_true: np.ndarray, y_pred: np.ndarray, class_names: l
     plt.xticks(rotation=90, fontsize=8)
     plt.tight_layout()
     return fig
-
-
-def load_checkpoint(path: Path):
-    ckpt = torch.load(path, map_location="cpu", weights_only=False)
-    model = models.build_model(ckpt["backbone"], ckpt["num_classes"], pretrained=False)
-    model.load_state_dict(ckpt["state_dict"])
-    return model, ckpt
 
 
 def main() -> None:
