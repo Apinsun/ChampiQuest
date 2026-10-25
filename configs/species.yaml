@@ -126,3 +126,9 @@ species:
     gbif_key: 5955395
     season: "été-automne"
     habitat: "prairie / lisière"
+
+  - key: "hydnum_repandum"
+    scientific: "Hydnum repandum"
+    gbif_key: 2554716
+    season: "automne"
+    habitat: "forêt"

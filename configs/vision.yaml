@@ -30,6 +30,16 @@ classes:
     danger: comestible
     n_images: 173
     # classe fusionnée : Morchella esculenta (142) + Morchella conica (31)
+  - name: Craterellus cornucopioides
+    common_name: Trompette de la mort
+    danger: comestible
+    n_images: 251
+    # comestible malgré son nom ; sosie = Craterellus tubaeformis (comestible)
+  - name: Hydnum repandum
+    common_name: Pied de mouton
+    danger: comestible
+    n_images: 371
+    # aiguillons caractéristiques ; sosies = autres Hydnum (comestibles)
 
   # --- sosies toxiques / mortels ---
   - name: Rubroboletus satanas

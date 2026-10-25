@@ -387,6 +387,31 @@ PER_SPECIES_TOPK = {
     "morchella": 0,
     "imleria_badia": 3,
     "boletus_reticulatus": 1,
+    "craterellus_cornucopioides": 3,
+    "hydnum_repandum": 5,
+}
+
+# Seeds figés des absences (arbitraires mais stables). Remplacent l'ancien
+# `enumerate(sorted(...))` qui dépendait de l'ordre des espèces : ajouter une
+# espèce décalait les seeds des autres. Valeurs 0-12 = anciennes positions triées
+# (reproduit le dataset actuel) ; 13-15 = nouvelles espèces. Ne jamais changer.
+RNG_SEEDS = {
+    "boletus_edulis": 0,
+    "boletus_pinophilus": 1,
+    "boletus_reticulatus": 2,
+    "cantharellus_amethysteus": 3,
+    "cantharellus_cibarius": 4,
+    "craterellus_cornucopioides": 5,
+    "craterellus_tubaeformis": 6,
+    "imleria_badia": 7,
+    "macrolepiota_excoriata": 8,
+    "macrolepiota_procera": 9,
+    "morchella": 10,
+    "xerocomellus_chrysenteron": 11,
+    "xerocomus_subtomentosus": 12,
+    "hydnum_repandum": 13,
+    "boletus_aereus": 14,
+    "chlorophyllum_rhacodes": 15,
 }
 
 
@@ -441,9 +466,9 @@ def main() -> None:
         sub["species"] = "proxy"
         occ = pd.concat([occ, sub[["decimalLatitude", "decimalLongitude", "year", "month", "day", "species", "taxon_key", "date", "glat", "glon"]]], ignore_index=True)
     seasons = compute_group_seasons(occ)
-    # RNG par espèce : tirages d'absences indépendants et reproductibles,
-    # quel que soit l'ordre/l'ampleur de l'augmentation par proxies.
-    rngs = {g: np.random.default_rng(i) for i, g in enumerate(sorted(occ["taxon_key"].unique()))}
+    # RNG par espèce : seed figé (RNG_SEEDS) → absences reproductibles
+    # quelle que soit la liste d'espèces (ordre / ajout).
+    rngs = {g: np.random.default_rng(RNG_SEEDS[g]) for g in occ["taxon_key"].unique()}
 
     print(f"{len(occ)} observations (dont proxies), {len(proxy_keys)} taxons proxy, {len(weather)} séries météo")
 

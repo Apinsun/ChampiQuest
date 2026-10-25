@@ -244,3 +244,57 @@ ses absences — à corriger par un RNG par espèce).
 Moyenne **0.767**. Bémols assumés : (1) le N par espèce est choisi sur les mêmes folds
 LOOCV (sélection légèrement optimiste) ; (2) les proxies sont **exclus du test** (ils ne
 servent qu'à l'entraînement — sinon ils gonflent l'AUC en tant que positifs « faciles »).
+
+---
+
+## Élagage re-validé avec proxies (post-augmentation)
+
+Le set `pruned` avait été figé **avant** l'ajout des proxies. Vérification faite *a
+posteriori* sur le dataset final (proxies inclus) — LOOCV, LightGBM A_simple :
+
+| Espèce | full | pruned | Δ (pruned − full) |
+|---|---|---|---|
+| cèpes | 0.713 | 0.717 | +0.004 |
+| lépiotes | 0.805 | 0.796 | −0.009 |
+| girolle | 0.752 | 0.744 | −0.008 |
+| morille | 0.711 | 0.694 | −0.017 |
+| bolet bai | 0.773 | 0.770 | −0.003 |
+| cèpe d'été | 0.842 | 0.846 | +0.004 |
+| **moyenne** | **0.766** | **0.761** | **−0.005** |
+
+`full` ressort en tête de **+0.005**, dans le bruit (la morille, dataset le plus petit,
+oscille à elle seule de ±0.017). Ablation par groupe de features :
+
+| config | AUC moy | Δ vs pruned |
+|---|---|---|
+| pruned (12) | 0.761 | — |
+| pruned + `clc_code` | 0.763 | +0.002 |
+| pruned + relief (alt/pente/orient.) | 0.760 | −0.001 |
+| pruned + sol (ph/clay/soc) | 0.767 | +0.006 |
+| pruned + fenêtres météo | 0.765 | +0.004 |
+| full (26) | 0.766 | +0.005 |
+
+**Conclusion** : les proxies n'ont **pas** ressuscité les features habitat — `clc_code`
+(+0.002) et le relief (−0.001) restent quasi-morts. Le petit gain de `full` vient de la
+texture du sol (ph/clay/soc, +0.006) et de fenêtres météo redondantes (+0.004), pas de
+l'occupation du sol → `pruned` conservé (parcimonie). Seule nuance écologique : le pH/argile/SOC
+est le seul groupe « habitat » avec un léger signal — cohérent (le pH compte), mais trop
+faible pour 3 features de plus au MVP.
+
+---
+
+## Perspectives : habitat / essences (non implémenté)
+
+**Limite structurante** : le modèle growth est plafonné par la **précision des coordonnées
+GBIF** (≈ 0.5–1 km). Relier une observation à « l'arbre sous lequel elle a poussé » est
+illusoire — c'est la même cause que la classe CLC majoritaire « terres arables » (champi de
+lisière géolocalisé dans le champ voisin). Plus la couche habitat est fine, plus ce bruit
+pénalise.
+
+**Piste essence** : la **BD Forêt® V2 (IGN)** — open data, nomenclature 32 essences
+(chêne, hêtre, pin, sapin, épicéa…), résolution 0,5 ha — serait le bon outil pour une
+**couche d'habitat potentiel par espèce** (cèpe → chênaies/hêtraies/pessières ; girolle →
+hêtraies-sapinières). C'est un projet de type **SDM presence-only** (MaxEnt-like), où la
+précision des coordonnées devient moins critique (agrégation à la cellule). Pas pour le MVP :
+l'ablation montre que le type de forêt (`clc_code` 311/312/313) n'apporte déjà rien au modèle
+growth (+0.002).

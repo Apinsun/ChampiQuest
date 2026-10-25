@@ -30,6 +30,8 @@ SPECIES = [
     "morchella",
     "imleria_badia",
     "boletus_reticulatus",
+    "craterellus_cornucopioides",
+    "hydnum_repandum",
 ]
 
 GROWTH_VARIABLES = [

@@ -81,7 +81,7 @@ class Predictor:
                     "species": name,
                     "common_name": self.common_names.get(name, name),
                     "probability": float(probs[i]),
-                    "edible": i < len(self.classes) and self.danger.get(name) == "comestible",
+                    "edible": bool(i < len(self.classes) and self.danger.get(name) == "comestible"),
                 }
             )
 

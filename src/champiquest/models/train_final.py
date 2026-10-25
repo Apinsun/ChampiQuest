@@ -7,7 +7,7 @@
   (`mlflow.lightgbm.log_model`).
 
 Usage :
-    poetry run python -m champiquest.models.train_final                    # les 6 espèces
+    poetry run python -m champiquest.models.train_final                    # les 8 espèces
     poetry run python -m champiquest.models.train_final --species boletus_edulis
 """
 
@@ -25,7 +25,7 @@ from champiquest.models.mlflow_config import setup
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MODELS_DIR = REPO_ROOT / "data" / "models"
 
-# Les 6 espèces modélisées (groupes écologiques de la partie 1).
+# Les 8 espèces modélisées (groupes écologiques de la partie 1).
 SPECIES = [
     "boletus_edulis",
     "macrolepiota_procera",
@@ -33,6 +33,8 @@ SPECIES = [
     "morchella",
     "imleria_badia",
     "boletus_reticulatus",
+    "craterellus_cornucopioides",
+    "hydnum_repandum",
 ]
 
 FEATURES = PRUNED_NUM_FEATURES  # 12 features, set validé en LOOCV
