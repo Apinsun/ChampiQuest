@@ -38,7 +38,7 @@ SPECIES = [
     "hydnum_repandum",
 ]
 
-FEATURES = PRUNED_NUM_FEATURES  # 12 features, set validé en LOOCV
+FEATURES = PRUNED_NUM_FEATURES  # 13 features (pruned + day_of_year), validé en LOOCV
 
 
 def train_one(species: str):
@@ -51,7 +51,7 @@ def train_one(species: str):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--species", default=None, help="espèce unique (sinon les 6)")
+    parser.add_argument("--species", default=None, help="espèce unique (sinon les 8)")
     parser.add_argument("--model-dir", default=str(MODELS_DIR))
     args = parser.parse_args()
 

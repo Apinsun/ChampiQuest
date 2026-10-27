@@ -21,10 +21,11 @@ FULL_NUM_FEATURES = [
     "phh2o_0-5cm", "sand_0-5cm", "clay_0-5cm", "soc_0-5cm",
 ]
 
-# Jeu élagué (data-driven) : corrélations + SHAP → 12 features non redondantes.
+# Jeu élagué (data-driven) : corrélations + SHAP → 13 features non redondantes.
 # 1 représentant par cluster (temp_sol plutôt que temp_mean, bilan_J30 plutôt que
 # J60/J90, tendance/choc plutôt que rechauffement_sol) ; vire les quasi-mortes
-# (clc_code, relief, texture du sol hors sable).
+# (clc_code, relief, texture du sol hors sable). + day_of_year : phénologie
+# intra-saison (début vs plein vs fin de saison), +0.05 AUC en LOOCV.
 PRUNED_NUM_FEATURES = [
     "precip_J7", "precip_J30", "precip_J90",
     "temp_min_J14", "temp_max_J14",
@@ -32,6 +33,7 @@ PRUNED_NUM_FEATURES = [
     "bilan_hydrique_J30",
     "temp_sol_J14", "humidite_sol_J30",
     "sand_0-5cm",
+    "day_of_year",
 ]
 
 FEATURE_SETS = {

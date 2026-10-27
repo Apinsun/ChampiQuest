@@ -1,6 +1,6 @@
 """Prédiction de pousse (partie 1) : météo d'un point → proba de fructification par espèce.
 
-Utilise les 6 modèles LightGBM finaux (`data/models/growth_*.joblib`) et Open-Meteo
+Utilise les 8 modèles LightGBM finaux (`data/models/growth_*.joblib`) et Open-Meteo
 (forecast, `past_days=90`) pour couvrir « aujourd'hui » et les prochains jours (J+16 max).
 """
 
@@ -22,7 +22,7 @@ MODELS_DIR = REPO_ROOT / "data" / "models"
 SOIL_POINTS = REPO_ROOT / "data" / "raw" / "soilgrids" / "soil_points.csv"
 CACHE_DIR = REPO_ROOT / "data" / "cache" / "growth"
 
-# Les 6 espèces modélisées (mêmes clés que configs/species.yaml).
+# Les 8 espèces modélisées (mêmes clés que configs/species.yaml).
 SPECIES = [
     "boletus_edulis",
     "macrolepiota_procera",
@@ -122,11 +122,12 @@ def fetch_era5(lat: float, lon: float, start_date: str, end_date: str) -> pd.Dat
 
 
 def compute_features(daily: pd.DataFrame, date: str, lat: float, lon: float) -> pd.Series:
-    """Calcule les 12 features `pruned` pour une date donnée."""
+    """Calcule les 13 features `pruned` (dont day_of_year) pour une date donnée."""
     obs = pd.Timestamp(date)
     feats = compute_weather_features(daily, obs)
     feats.update(compute_soil_features(daily, obs))
     feats["sand_0-5cm"] = sand_nearest(lat, lon)
+    feats["day_of_year"] = obs.dayofyear
     return pd.Series({f: feats[f] for f in PRUNED_NUM_FEATURES})
 
 

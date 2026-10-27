@@ -3,8 +3,8 @@
 Pipeline (lancé manuellement, pas de cron pour l'instant) :
 1. **refresh** : ERA5 (réanalyse précise, passé J-90 → J-5) + forecast (J-7 → J+3),
    ajoutés au store (le forecast, transitoire, est re-fetché à chaque run) ;
-2. **generate** : pour chaque point, lit la série du store → 12 features pour
-   J, J+1, J+2, J+3 → 6 modèles → season gate ;
+2. **generate** : pour chaque point, lit la série du store → 13 features pour
+   J, J+1, J+2, J+3 → 8 modèles → season gate ;
 3. sauvegarde `data/maps/<date>/probs.npz` (4 dates).
 
 Usage :
@@ -34,7 +34,7 @@ MAPS_DIR = REPO_ROOT / "data" / "maps"
 
 BBOX = {"min_lat": 47.3, "max_lat": 49.3, "min_lon": 6.4, "max_lon": 8.7}
 STEP = 0.055        # ~5 km
-DELAY = 0.5         # s entre deux points (limite minute Open-Meteo)
+DELAY = 0.2         # s entre deux points (limite minute Open-Meteo : 600/min)
 ERA5_LAG = 5        # délai de publication de la réanalyse ERA5 (jours)
 FORECAST_DAYS = 3   # horizon de prévision (J+3)
 HISTORY_DAYS = 90   # fenêtre nécessaire aux features (precip_J90)

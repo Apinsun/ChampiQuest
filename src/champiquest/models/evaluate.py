@@ -40,6 +40,7 @@ def load_species(species: str, features: list[str]) -> pd.DataFrame:
     df = pd.read_csv(DATASET, parse_dates=["date"])
     df = df[df["taxon_key"] == species].copy()
     df["year"] = df["date"].dt.year
+    df["day_of_year"] = df["date"].dt.dayofyear
     df["clc_code"] = df["clc_code"].fillna(0).astype(int).astype("category")
     df = df.dropna(subset=features)
     return df

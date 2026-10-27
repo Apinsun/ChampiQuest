@@ -283,6 +283,62 @@ faible pour 3 features de plus au MVP.
 
 ---
 
+---
+
+## Ablation : modèle unique vs N modèles, et feature `day_of_year`
+
+Deux questions de soutenance, testées sur le **même protocole LOOCV** (leave-one-year-out)
+et les **mêmes données** (8 espèces, LightGBM `A_simple`, set pruned) :
+
+1. Un **seul modèle** (espèce = feature catégorielle `taxon_key`) ferait-il aussi bien
+   qu'**un modèle par espèce** ?
+2. La **saison** est-elle mieux gérée par une règle (fenêtre + gate) ou **apprise** par
+   le modèle (feature `day_of_year`) ?
+
+| Variante | AUC moy. par espèce | Δ vs baseline |
+|---|---|---|
+| **N modèles (baseline, 12 features)** | **0.760** | — |
+| N modèles + `day_of_year` | **0.811** | **+0.051** |
+| Modèle unique (`taxon_key`) | 0.703 | −0.057 |
+| Modèle unique + `day_of_year` | 0.789 | +0.029 |
+
+### Résultat 1 : la phénologie intra-saison portait un gros signal
+
+Ajouter `day_of_year` aux modèles par espèce : **0.760 → 0.811** (+0.051). La fenêtre
+de fructification (percentiles 5–95 % ± 14 j) borne le **domaine** (hors saison = non
+applicable), mais à l'intérieur, la phénologie fine (début vs plein vs fin de saison)
+restait inexploitée : le modèle n'avait aucune feature de date.
+
+→ **Décision** : `day_of_year` ajouté au set pruned (**13 features**), modèles finaux
+retrainés. La gate « hors saison » reste nécessaire : le modèle n'a jamais vu de dates
+hors fenêtre (les absences sont échantillonnées **dans** la fenêtre, cf. morille doy
+67–148), il ne peut pas apprendre cette frontière. Pas de fuite : le jour-de-l'année est
+connu à l'inférence (on prédit pour une date donnée).
+
+### Résultat 2 : le modèle unique perd — la morille s'effondre
+
+Sans `day_of_year`, le modèle unique tombe à **0.703**, et la **morille à 0.465** (pire
+que le hasard : classement inversé). Cause : la morille est la **seule espèce de
+printemps** (doy 67–148), noyée dans ~60 000 lignes d'espèces d'automne. Un seul
+LightGBM à 50 arbres répartit sa capacité entre 8 espèces → la morille (1,9 % des
+données) n'a presque pas de capacité dédiée, et la structure partagée « automne » la
+prédit à l'envers. Avec `day_of_year`, elle récupère (0.698) — preuve que c'est la
+phénologie divergente, pas un manque de données.
+
+Même avec `day_of_year`, **N modèles (0.811) > modèle unique (0.789)** : mutualiser
+~60 000 lignes ne compense pas la dilution de capacité ni le mélange printemps/automne.
+
+### Leçon
+
+- **N modèles** à 8 espèces à phénologies opposées : la mutualisation ne paie pas, et
+  l'espèce minoritaire trinque. Un modèle unique se justifierait à 100+ espèces, pas ici.
+- **Métrique** : l'AUC **par espèce** (slicée) est la comparaison honnête. L'AUC globale
+  du modèle unique (0.743–0.818) est gonflée par `taxon_key` (taux de base par espèce).
+
+Script : `src/champiquest/models/evaluate_ablation.py` (set de base gelé, reproductible).
+
+---
+
 ## Perspectives : habitat / essences (non implémenté)
 
 **Limite structurante** : le modèle growth est plafonné par la **précision des coordonnées
