@@ -1,30 +1,48 @@
 boletus_edulis:
-  start_doy: 172
-  end_doy: 318
-  n_obs: 667
-  p5_raw: 186
-  p95_raw: 304
-cantharellus_cibarius:
-  start_doy: 152
-  end_doy: 298
-  n_obs: 1351
-  p5_raw: 166
-  p95_raw: 284
-imleria_badia:
-  start_doy: 185
+  start_doy: 175
   end_doy: 321
-  n_obs: 359
-  p5_raw: 199
+  n_obs: 1276
+  p5_raw: 189
   p95_raw: 307
 macrolepiota_procera:
-  start_doy: 190
+  start_doy: 194
   end_doy: 326
-  n_obs: 438
-  p5_raw: 204
+  n_obs: 879
+  p5_raw: 208
   p95_raw: 312
+cantharellus_cibarius:
+  start_doy: 150
+  end_doy: 302
+  n_obs: 1892
+  p5_raw: 164
+  p95_raw: 288
 morchella:
-  start_doy: 67
-  end_doy: 148
-  n_obs: 281
-  p5_raw: 81
-  p95_raw: 134
+  start_doy: 72
+  end_doy: 146
+  n_obs: 763
+  p5_raw: 86
+  p95_raw: 132
+imleria_badia:
+  start_doy: 190
+  end_doy: 324
+  n_obs: 1078
+  p5_raw: 204
+  p95_raw: 310
+boletus_reticulatus:
+  start_doy: 139
+  end_doy: 280
+  n_obs: 1037
+  p5_raw: 153
+  p95_raw: 266
+craterellus_cornucopioides:
+  start_doy: 193
+  end_doy: 326
+  n_obs: 919
+  p5_raw: 207
+  p95_raw: 312
+hydnum_repandum:
+  start_doy: 180
+  end_doy: 328
+  n_obs: 1203
+  p5_raw: 194
+  p95_raw: 314

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChampiQuest — Soutenance</title>
+<style>
+  :root {
+    --bg: #0f1b16;
+    --bg2: #14251d;
+    --panel: #1a2f25;
+    --ink: #e8f0ea;
+    --muted: #9fb5a8;
+    --accent: #7bc47f;   /* vert champignon */
+    --accent2: #e0b15c;  /* ambre */
+    --danger: #e06c6c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 4.5vh 6vw 5.5vh;
+    animation: fade .35s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none;} }
+
+  h1 { font-size: 7vh; margin: 0 0 2vh; letter-spacing: -.5px; }
+  h1 .green { color: var(--accent); }
+  h2 { font-size: 4.6vh; margin: 0 0 3vh; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 1vh; }
+  h3 { font-size: 2.6vh; margin: 2.5vh 0 1vh; color: var(--accent2); }
+  p, li { font-size: 2.55vh; line-height: 1.45; }
+  ul { margin: 1vh 0 0; padding-left: 2.2vw; }
+  li { margin-bottom: 1.1vh; }
+  .muted { color: var(--muted); }
+  .small { font-size: 2vh; }
+  .danger { color: var(--danger); font-weight: 600; }
+  .good { color: var(--accent); font-weight: 600; }
+  .big { font-size: 5.5vh; font-weight: 700; color: var(--accent); }
+  .kicker { text-transform: uppercase; letter-spacing: 2px; font-size: 1.9vh; color: var(--muted); margin-bottom: 1.5vh; }
+
+  .subtitle { font-size: 3vh; color: var(--muted); margin-top: 1vh; }
+  .slide .footer-note { position: absolute; bottom: 2.5vh; left: 6vw; right: 6vw; color: var(--muted); font-size: 1.7vh; }
+
+  /* Colonnes */
+  .cols { display: flex; gap: 3vw; flex: 1; min-height: 0; align-items: stretch; }
+  .col { flex: 1; min-width: 0; }
+  .col-2 { flex: 2; }
+
+  /* Tableaux */
+  table { border-collapse: collapse; width: 100%; font-size: 2.35vh; }
+  th, td { padding: 1.1vh 1vw; text-align: left; border-bottom: 1px solid rgba(255,255,255,.08); }
+  th { color: var(--accent2); font-weight: 600; border-bottom: 2px solid var(--accent2); }
+  tr:nth-child(even) td { background: rgba(255,255,255,.03); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .hl td { background: rgba(123,196,127,.12) !important; font-weight: 600; }
+  .caption { font-size: 1.8vh; color: var(--muted); text-align: center; margin-top: 0.8vh; }
+
+  /* Images */
+  .img-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 0; }
+  .img-wrap img { max-width: 100%; max-height: 62vh; object-fit: contain; border-radius: 6px; }
+  .row-imgs { display: flex; gap: 2vw; align-items: center; justify-content: center; flex: 1; }
+  .row-imgs img { max-width: 46%; max-height: 56vh; object-fit: contain; border-radius: 6px; }
+
+  /* Carte */
+  .map-frame img { max-height: 60vh; border-radius: 8px; }
+
+  /* Cartes / badges */
+  .badges { display: flex; gap: 1.2vw; flex-wrap: wrap; margin-top: 2vh; }
+  .badge { background: var(--panel); border: 1px solid var(--accent); color: var(--accent); padding: 0.9vh 1.2vw; border-radius: 20px; font-size: 2.1vh; font-weight: 600; }
+
+  /* Diagramme d'architecture */
+  .diagram { display: flex; flex-direction: column; gap: 1.4vh; align-items: center; }
+  .drow { display: flex; gap: 1.4vw; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+  .dbox { background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 1.5vh 1.5vw; min-width: 180px; text-align: center; }
+  .dbox .t { font-weight: 700; color: var(--accent2); font-size: 2.2vh; }
+  .dbox .s { color: var(--muted); font-size: 1.75vh; margin-top: 0.4vh; }
+  .darrow { color: var(--accent); font-size: 3.4vh; line-height: 1; }
+  .dlabel { color: var(--muted); font-size: 1.7vh; }
+
+  /* Notes orateur */
+  .notes { display: none; }
+  .notes-panel { display: none; position: fixed; left: 0; right: 0; bottom: 0; background: #0a120d; border-top: 2px solid var(--accent2); color: var(--ink); padding: 1.6vh 5vw; font-size: 2.2vh; z-index: 20; line-height: 1.5; }
+  .notes-panel.on { display: block; }
+
+  /* Navigation */
+  .nav { position: fixed; bottom: 1.6vh; right: 2vw; color: var(--muted); font-size: 1.8vh; z-index: 10; }
+  .nav span { color: var(--ink); }
+  .hint { position: fixed; bottom: 1.6vh; left: 2vw; color: var(--muted); font-size: 1.6vh; z-index: 10; }
+
+  /* Print */
+  @page { size: 1280px 720px; margin: 0; }
+  @media print {
+    body { overflow: visible; background: #fff; }
+    .slide { display: flex !important; position: relative; width: 1280px; height: 720px; page-break-after: always; }
+    .nav, .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- 1. Titre -->
+  <section class="slide active">
+    <div class="kicker">Projet de fin de formation — AI Engineer</div>
+    <h1><span class="green">Champi</span>Quest</h1>
+    <p class="subtitle">Prévision de pousse de champignons &amp; reconnaissance visuelle</p>
+    <div class="badges" style="margin-top:5vh">
+      <span class="badge">1 · Météo → pousse</span>
+      <span class="badge">2 · Vision (20 espèces)</span>
+      <span class="badge">3 · API + carte</span>
+    </div>
+    <div class="footer-note">LightGBM · ConvNeXt · FastAPI · Docker · Open-Meteo · GBIF</div>
+  </section>
+
+  <!-- 2. Objectifs -->
+  <section class="slide">
+    <h2>Objectifs &amp; périmètre</h2>
+    <ul>
+      <li><strong>Prédire</strong> quand &amp; où un champignon va fructifier (météo → probabilité de pousse).</li>
+      <li><strong>Reconnaître</strong> l'espèce à partir d'une photo — en privilégiant la <span class="danger">sécurité</span> du cueilleur.</li>
+      <li><strong>Rendre les modèles utilisables</strong> : API, carte interactive, page de démo.</li>
+    </ul>
+    <h3>3 semaines</h3>
+    <ul>
+      <li><strong>Semaine 1</strong> — partie 1 : prédiction météo → pousse (8 espèces, LightGBM).</li>
+      <li><strong>Semaine 2</strong> — partie 2 : reconnaissance d'espèce par image (20 classes, ConvNeXt).</li>
+      <li><strong>Semaine 3</strong> — FastAPI, carte journalière, Docker + CI/CD, préparation soutenance.</li>
+    </ul>
+    <div class="footer-note">Règle du projet : comprendre &amp; justifier chaque choix, baselines partout, zéro « vibecode ».</div>
+  </section>
+
+  <!-- Vue d'ensemble -->
+  <section class="slide">
+    <h2>Vue d'ensemble</h2>
+    <div class="diagram" style="margin-top:2vh">
+      <div class="drow">
+        <div class="dbox"><div class="t">GBIF</div><div class="s">présences (8 espèces)</div></div>
+        <div class="dbox"><div class="t">Open-Meteo</div><div class="s">ERA5 + forecast</div></div>
+        <div class="dbox"><div class="t">SoilGrids</div><div class="s">sol / relief</div></div>
+      </div>
+      <div class="darrow">↓</div>
+      <div class="dlabel">pseudo-absences « effort prouvé » + 13 features</div>
+      <div class="drow">
+        <div class="dbox"><div class="t">LightGBM × 8</div><div class="s">pousse (partie 1)</div></div>
+        <div class="dbox"><div class="t">ConvNeXt</div><div class="s">vision · 20 classes (partie 2)</div></div>
+      </div>
+      <div class="darrow">↓</div>
+      <div class="drow">
+        <div class="dbox"><div class="t">FastAPI</div><div class="s">/identify · /growth · /map</div></div>
+        <div class="dbox"><div class="t">Leaflet</div><div class="s">carte + page démo</div></div>
+      </div>
+    </div>
+    <div class="notes">3 briques de données → 2 familles de modèles → 1 API + carte. C'est le fil rouge de toute la soutenance.</div>
+  </section>
+
+  <!-- 3. Données partie 1 -->
+  <section class="slide">
+    <h2>Données (partie 1 — pousse)</h2>
+    <div class="cols">
+      <div class="col">
+        <h3>Observations</h3>
+        <ul>
+          <li>GBIF : <strong>présences uniquement</strong> (espèce, date, coordonnées).</li>
+          <li>Précision des coordonnées ≈ <strong>0,5–1 km</strong> (souvent floutées).</li>
+          <li>8 espèces cibles (cèpes, girolle, morille, trompette, pied de mouton…).</li>
+        </ul>
+        <h3>Contexte environnemental</h3>
+        <ul>
+          <li>Météo : <strong>Open-Meteo</strong> (ERA5 réanalyse + forecast).</li>
+          <li>Sol : SoilGrids (sable, pH, argile…) + altitude/relief.</li>
+          <li>Occupation du sol : Corine Land Cover.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="img-wrap">
+          <img src="../reports/eda_p1_carte_obs.png" alt="observations GBIF">
+          <div class="caption">Observations GBIF (8 espèces) — zone d'étude.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Exploration -->
+  <section class="slide">
+    <h2>Exploration (partie 1)</h2>
+    <div class="img-wrap">
+      <img src="../reports/eda_p1_saison.png" alt="saisonnalité">
+      <div class="caption">Saisonnalité des observations — la morille est la seule espèce de printemps, les autres fructifient en été/automne.</div>
+    </div>
+    <div class="notes">Ce graphique justifie deux choix : (1) les fenêtres de saison par espèce, (2) la feature day_of_year (+0.05 AUC).</div>
+  </section>
+
+  <!-- 4. Pseudo-absences -->
+  <section class="slide">
+    <h2>Le problème des absences</h2>
+    <p>Les données GBIF ne contiennent <strong>que des présences</strong> : « champignon vu ». Pour apprendre
+    « quand il <em>ne</em> pousse <em>pas</em> », il faut fabriquer des négatifs <span class="good">honnêtes</span>.</p>
+    <ul>
+      <li><strong>Effort prouvé</strong> : un autre champignon a été vu au même endroit, le même jour, sans notre cible → c'est un vrai négatif (on a regardé, pas trouvé).</li>
+      <li><strong>Buffer ±3 jours</strong> : un carpophore persiste plusieurs jours → pas de fausse absence autour d'une présence.</li>
+      <li><strong>Fenêtre de fructification</strong> : les absences sont tirées <em>dans la saison</em> de l'espèce (morille : mars–mai, jamais en septembre).</li>
+    </ul>
+    <p class="muted small">→ chaque négatif encode « présence d'effort + absence de l'espèce », pas « personne n'est sorti ».</p>
+  </section>
+
+  <!-- 5. Feature engineering -->
+  <section class="slide">
+    <h2>Feature engineering (partie 1)</h2>
+    <ul>
+      <li><strong>Fenêtres météo</strong> : pluie J7/J30/J90, bilan hydrique (pluie − évapotranspiration), choc/tendance thermique, température du sol.</li>
+      <li><strong>Proxies de co-fructification</strong> : des espèces très corrélées à la cible sont ajoutées comme présences à l'entraînement (combat le manque de données, sans fuite : la localisation n'est <em>jamais</em> une feature).</li>
+      <li><strong>Élagage data-driven</strong> : corrélations + SHAP → <strong>13 features</strong> retenues (redondances et features mortes éliminées).</li>
+      <li><strong>day_of_year</strong> : phénologie intra-saison (début vs plein vs fin de saison) — <span class="good">+0.05 AUC</span>.</li>
+    </ul>
+    <div class="footer-note">La localisation sert à récupérer l'environnement, jamais en feature → le modèle généralise (n'apprend pas les spots par cœur).</div>
+  </section>
+
+  <!-- 6. Modélisation -->
+  <section class="slide">
+    <h2>Modélisation (partie 1)</h2>
+    <ul>
+      <li><strong>Un LightGBM par espèce</strong> (config simple : 50 arbres, 7 feuilles, profondeur 4).</li>
+      <li>Baseline : <strong>régression logistique</strong> (pour montrer l'apport du gradient boosting).</li>
+      <li><strong>Évaluation : LOOCV par année</strong> — on entraîne sur toutes les années sauf une, on prédit l'année retirée ; répété pour chaque année (aucune fuite temporelle).</li>
+      <li>Proxies <span class="muted">exclus du test</span> (ils ne servent qu'à l'entraînement, sinon ils gonflent l'AUC).</li>
+    </ul>
+    <h3>Pourquoi N modèles plutôt qu'un seul ?</h3>
+    <p class="muted small">Question de jury légitime → répondue par une ablation (slide suivante).</p>
+  </section>
+
+  <!-- 7. Résultats partie 1 -->
+  <section class="slide">
+    <h2>Résultats — pousse (AUC par espèce, LOOCV)</h2>
+    <table>
+      <thead><tr><th>Espèce</th><th class="num">AUC</th></tr></thead>
+      <tbody>
+        <tr><td>Trompette de la mort</td><td class="num">0.885</td></tr>
+        <tr><td>Lépiote élevée (coulemelle)</td><td class="num">0.882</td></tr>
+        <tr><td>Cèpe d'été</td><td class="num">0.862</td></tr>
+        <tr><td>Bolet bai</td><td class="num">0.821</td></tr>
+        <tr><td>Pied de mouton</td><td class="num">0.817</td></tr>
+        <tr><td>Morille</td><td class="num">0.753</td></tr>
+        <tr><td>Cèpe de Bordeaux</td><td class="num">0.749</td></tr>
+        <tr><td>Girolle</td><td class="num">0.722</td></tr>
+        <tr class="hl"><td>Moyenne</td><td class="num">0.811</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">13 features (pruned + day_of_year). Sans <code>day_of_year</code> : 0.760 → l'ajout de la saison rapporte +0.05.</p>
+  </section>
+
+  <!-- 8. Ablation -->
+  <section class="slide">
+    <h2>Ablation : 1 modèle vs N modèles</h2>
+    <div class="cols">
+      <div class="col">
+        <div class="img-wrap">
+          <img src="../reports/ablation_1vsN.png" alt="ablation 1 vs N">
+        </div>
+        <h3>Leçon</h3>
+        <ul>
+          <li>Mutualiser les espèces <strong>dilue</strong> la capacité du modèle.</li>
+          <li>L'AUC <strong>par espèce</strong> (slicée) est la comparaison honnête — l'AUC globale serait gonflée par la feature espèce.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>La morille s'effondre dans le modèle unique</h3>
+        <table>
+          <thead><tr><th>Morille</th><th class="num">AUC</th></tr></thead>
+          <tbody>
+            <tr><td>Modèle dédié</td><td class="num good">0.753</td></tr>
+            <tr class="hl"><td>Modèle unique (sans saison)</td><td class="num danger">0.465</td></tr>
+          </tbody>
+        </table>
+        <p class="small">Seule espèce <strong>de printemps</strong>, noyée dans ~60 000 lignes d'espèces d'automne : la structure partagée la prédit à l'envers (&lt; 0,5 = pire que le hasard).</p>
+        <p class="small muted">→ N modèles conservés, à 8 espèces à phénologies opposées. Un modèle unique se justifierait à 100+ espèces.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. SHAP -->
+  <section class="slide">
+    <h2>Interprétation (SHAP)</h2>
+    <div class="row-imgs">
+      <img src="../reports/shap_importance_morchella.png" alt="importance morille">
+      <img src="../reports/shap_beeswarm_boletus_edulis.png" alt="beeswarm cèpe">
+    </div>
+    <p class="caption">Importance (morille) &amp; beeswarm (cèpe de Bordeaux) — LightGBM.</p>
+    <ul class="small">
+      <li>Le relief et l'occupation du sol ressortent <strong>quasi morts</strong> → cohérent avec la précision GPS (~1 km).</li>
+      <li>Règle de choix : à corrélation égale, <strong>sol &gt; air</strong>, <strong>extrêmes &gt; moyenne</strong>, <strong>bilan hydrique &gt; pluie brute</strong>.</li>
+    </ul>
+  </section>
+
+  <!-- 10. Servir les prédictions -->
+  <section class="slide">
+    <h2>Servir les prédictions (API + carte)</h2>
+    <div class="cols">
+      <div class="col">
+        <h3>FastAPI</h3>
+        <ul>
+          <li><code>POST /growth/predict</code> — point + date → proba par espèce.</li>
+          <li><code>GET /map</code> — heatmap PNG (date + espèces).</li>
+          <li><code>GET /species</code>, <code>/health</code>.</li>
+        </ul>
+        <h3>Pipeline carte</h3>
+        <ul>
+          <li>Store Parquet : ERA5 (passé) + forecast (J+3).</li>
+          <li>Grille ~5 km (1634 points) → 13 features → 8 modèles → interpolation + lissage.</li>
+          <li>Échelle fixe 0→1 (comparable entre espèces/dates).</li>
+        </ul>
+      </div>
+      <div class="col map-frame">
+        <div class="img-wrap">
+          <img src="map_example.png" alt="carte de prédiction">
+          <div class="caption">Heatmap des probabilités de pousse (Vosges / Forêt-Noire).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Vision -->
+  <section class="slide">
+    <h2>Reconnaissance visuelle (partie 2)</h2>
+    <ul>
+      <li>Base : <strong>DF20</strong> (dataset d'images existant) + espèces cibles + <code>other_fungus</code> (champis hors cible) + <code>non-champi</code>.</li>
+      <li><strong>20 classes</strong>, dont les « faux amis » (sosies dangereux) sur-échantillonnés.</li>
+      <li>Modèle : <strong>ConvNeXt-Base</strong> pré-entraîné, fine-tuné.</li>
+      <li>Métadonnées des vues (chapeau / lames / pied) exploitées en multi-photos.</li>
+    </ul>
+    <div class="img-wrap" style="flex:1">
+      <img src="../reports/eda_partie2_distribution.png" alt="distribution des classes">
+      <div class="caption">Distribution des classes (partie vision).</div>
+    </div>
+  </section>
+
+  <!-- 12. Sécurité -->
+  <section class="slide">
+    <h2>Sécurité des cueilleurs</h2>
+    <p>Toutes les erreurs <strong>ne se valent pas</strong> : annoncer « comestible » un champignon toxique est bien plus grave que l'inverse.</p>
+    <div class="cols">
+      <div class="col">
+        <h3>Calibration</h3>
+        <ul>
+          <li><strong>Temperature scaling</strong> post-entraînement → probabilités fiables (pas juste un argmax).</li>
+        </ul>
+        <h3>Décision à coût</h3>
+        <ul>
+          <li><span class="danger">Comestible prédit sur toxique : ×10</span></li>
+          <li>Comestible sur « étranger » : ×8</li>
+          <li>Abstention si confiance &lt; 0.6 → « je ne sais pas ».</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="big">0 erreur dangereuse</div>
+        <p class="muted">après calibration + décision à coût.</p>
+        <p class="small">L'argmax seul en commettait 2,8 % (comestible prédit toxique) — la matrice de coût les élimine.</p>
+      </div>
+    </div>
+    <div class="notes">Insister : la dangerosité n'est PAS mise dans la loss (on garde une loss propre), elle est appliquée en post-traitement via la matrice de coût + l'abstention. Détails dans reports/ajout-especes-calibration.md.</div>
+  </section>
+
+  <!-- 13. Résultats partie 2 -->
+  <section class="slide">
+    <h2>Résultats — vision (20 classes)</h2>
+    <div class="cols">
+      <div class="col">
+        <table>
+          <thead><tr><th>Métrique</th><th class="num">Valeur</th></tr></thead>
+          <tbody>
+            <tr><td>Accuracy (test)</td><td class="num">0.879</td></tr>
+            <tr><td>Macro-F1 (test)</td><td class="num">0.841</td></tr>
+            <tr><td>Erreur dangereuse (coût)</td><td class="num good">0.0 %</td></tr>
+            <tr><td>Étranger → comestible (coût)</td><td class="num">1.4 % (bénin)</td></tr>
+          </tbody>
+        </table>
+        <p class="small muted">Nouvelles classes : trompette F1 0.941, pied de mouton 0.855.</p>
+      </div>
+      <div class="col">
+        <img src="../reports/partie2_confusion_matrix.png" alt="matrice de confusion" style="max-width:100%; max-height:55vh; border-radius:6px">
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. Explicabilité vision -->
+  <section class="slide">
+    <h2>Explicabilité vision (Grad-CAM)</h2>
+    <div class="img-wrap">
+      <img src="../reports/partie2_gradcam.png" alt="grad-cam">
+      <div class="caption">Grad-CAM : où le modèle regarde pour décider.</div>
+    </div>
+    <div class="img-wrap" style="flex:0">
+      <img src="../reports/partie2_training_curves.png" alt="courbes d'entraînement" style="max-height:24vh">
+      <div class="caption">Courbes d'entraînement (loss / F1).</div>
+    </div>
+  </section>
+
+  <!-- 15. Interface -->
+  <section class="slide">
+    <h2>Interface &amp; démo</h2>
+    <ul>
+      <li><strong>Page de démo</strong> : upload d'une photo → décision (comestible / toxique / à éviter / autre) + top-3 + badge de danger.</li>
+      <li><strong>Carte interactive</strong> (Leaflet) : slider sur les dates, sélection des espèces, légende 0→1.</li>
+      <li>Resize côté client (≤ 1 MPx) avant envoi → léger.</li>
+    </ul>
+    <div class="badges">
+      <span class="badge">/identify</span>
+      <span class="badge">/growth/predict</span>
+      <span class="badge">/map</span>
+      <span class="badge">/demo</span>
+    </div>
+    <div class="footer-note">Smoke test sur les 5 endpoints réels (health / species / growth / identify / map).</div>
+  </section>
+
+  <!-- 16. Déploiement -->
+  <section class="slide">
+    <h2>Déploiement (Docker + CI/CD)</h2>
+    <ul>
+      <li><strong>Image Docker</strong> : Python 3.12 slim, dépendances runtime uniquement ; modèles &amp; données en volume (pas dans l'image).</li>
+      <li><strong>CI</strong> (toutes branches) : 14 tests (pytest) — anti-fuite, décision à coût, store météo, API.</li>
+      <li><strong>CD</strong> (main + tags) : build + push vers <strong>GHCR</strong>, avec cache de layers (pull incrémental).</li>
+      <li>Modèles légers (LightGBM / ConvNeXt CPU) — pas besoin de GPU en prod.</li>
+    </ul>
+    <div class="badges">
+      <span class="badge">Docker</span><span class="badge">GitHub Actions</span><span class="badge">GHCR</span><span class="badge">pytest</span>
+    </div>
+  </section>
+
+  <!-- 17. Limites & perspectives -->
+  <section class="slide">
+    <h2>Limites &amp; perspectives</h2>
+    <ul>
+      <li><strong>Précision GBIF (~1 km)</strong> = plafond réel : impossible de relier une observation à « l'arbre sous lequel elle a poussé ».</li>
+      <li>Perspective habitat : <strong>BD Forêt V2 (IGN)</strong> + SDM presence-only — documenté, non implémenté au MVP.</li>
+      <li><strong>Cron</strong> pour automatiser le refresh météo + la carte chaque jour.</li>
+      <li>Étendre la vision à plus d'espèces (le pipeline d'ajout est documenté et générique).</li>
+    </ul>
+    <p class="muted small">Anti-sur-ingénierie assumée : périmètre MVP, chaque ajout testé par ablation.</p>
+  </section>
+
+  <!-- 18. Conclusion -->
+  <section class="slide">
+    <h2>Conclusion</h2>
+    <ul>
+      <li><strong>Partie 1</strong> : 8 espèces, LightGBM un-par-espèce, <span class="good">AUC 0.811</span> (LOOCV), interprétable (SHAP).</li>
+      <li><strong>Partie 2</strong> : ConvNeXt 20 classes, <span class="good">0 erreur dangereuse</span> grâce à calibration + décision à coût.</li>
+      <li><strong>Partie 3</strong> : API + carte + démo, déployées via Docker &amp; CI/CD.</li>
+    </ul>
+    <p style="margin-top:3vh">Chaque choix est justifié par une <strong>baseline ou une ablation</strong> : régression logistique, élagage de features, modèle unique vs N, décision à coût.</p>
+    <div class="footer-note">Merci — questions ? 🍄</div>
+  </section>
+
+</div>
+
+<div class="nav" id="nav">1 / 20</div>
+<div class="hint">← → naviguer · F plein écran · N notes orateur · P imprimer</div>
+<div class="notes-panel" id="notesPanel"></div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const nav = document.getElementById('nav');
+  const notesPanel = document.getElementById('notesPanel');
+  let i = 0;
+  function refreshNotes() {
+    const n = slides[i].querySelector('.notes');
+    notesPanel.innerHTML = '<strong style="color:var(--accent2)">Notes — slide ' + (i + 1) + '</strong><br>' + (n ? n.innerHTML : '— (pas de notes)');
+  }
+  function show(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    nav.innerHTML = `<span>${i + 1}</span> / ${slides.length}`;
+    location.hash = i + 1;
+    if (notesPanel.classList.contains('on')) refreshNotes();
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') show(i + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(i - 1);
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key.toLowerCase() === 'f') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (e.key.toLowerCase() === 'n') { notesPanel.classList.toggle('on'); refreshNotes(); }
+  });
+  document.addEventListener('click', e => {
+    if (e.clientX > window.innerWidth * 0.7) show(i + 1);
+    else if (e.clientX < window.innerWidth * 0.3) show(i - 1);
+  });
+  const h = parseInt(location.hash.slice(1), 10);
+  if (h >= 1 && h <= slides.length) show(h - 1);
+  else show(0);
+</script>
+</body>
+</html>
