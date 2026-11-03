@@ -79,6 +79,13 @@
   .badges { display: flex; gap: 1.2vw; flex-wrap: wrap; margin-top: 2vh; }
   .badge { background: var(--panel); border: 1px solid var(--accent); color: var(--accent); padding: 0.9vh 1.2vw; border-radius: 20px; font-size: 2.1vh; font-weight: 600; }
 
+  /* Encadré lexique (termes techniques) */
+  .gloss { background: var(--panel); border: 1px solid var(--accent2); border-left: 4px solid var(--accent2); border-radius: 8px; padding: 1.6vh 1.4vw; font-size: 2vh; line-height: 1.5; }
+  .gloss .t { color: var(--accent2); font-weight: 700; font-size: 2.2vh; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8vh; }
+  .gloss p { margin: 0 0 1vh; }
+  .gloss p:last-child { margin-bottom: 0; }
+  .gloss .term { color: var(--accent); font-weight: 600; }
+
   /* Diagramme d'architecture */
   .diagram { display: flex; flex-direction: column; gap: 1.4vh; align-items: center; }
   .drow { display: flex; gap: 1.4vw; align-items: stretch; justify-content: center; flex-wrap: wrap; }
@@ -101,9 +108,10 @@
   /* Print */
   @page { size: 1280px 720px; margin: 0; }
   @media print {
-    body { overflow: visible; background: #fff; }
-    .slide { display: flex !important; position: relative; width: 1280px; height: 720px; page-break-after: always; }
-    .nav, .hint { display: none; }
+    body { overflow: visible; background: #fff; counter-reset: slideNum; }
+    .slide { display: flex !important; position: relative; width: 1280px; height: 720px; page-break-after: always; counter-increment: slideNum; }
+    .slide::after { content: counter(slideNum); position: absolute; bottom: 2vh; right: 3vw; font-size: 1.8vh; color: #9aa; }
+    .nav, .hint, .notes-panel { display: none; }
   }
 </style>
 </head>
@@ -140,10 +148,10 @@
     <div class="footer-note">Règle du projet : comprendre &amp; justifier chaque choix, baselines partout, zéro « vibecode ».</div>
   </section>
 
-  <!-- Vue d'ensemble -->
+  <!-- Vue d'ensemble : partie 1 (pousse) -->
   <section class="slide">
-    <h2>Vue d'ensemble</h2>
-    <div class="diagram" style="margin-top:2vh">
+    <h2>Vue d'ensemble — partie 1 (pousse)</h2>
+    <div class="diagram" style="margin-top:3vh">
       <div class="drow">
         <div class="dbox"><div class="t">GBIF</div><div class="s">présences (8 espèces)</div></div>
         <div class="dbox"><div class="t">Open-Meteo</div><div class="s">ERA5 + forecast</div></div>
@@ -152,16 +160,36 @@
       <div class="darrow">↓</div>
       <div class="dlabel">pseudo-absences « effort prouvé » + 13 features</div>
       <div class="drow">
-        <div class="dbox"><div class="t">LightGBM × 8</div><div class="s">pousse (partie 1)</div></div>
-        <div class="dbox"><div class="t">ConvNeXt</div><div class="s">vision · 20 classes (partie 2)</div></div>
+        <div class="dbox"><div class="t">LightGBM × 8</div><div class="s">1 modèle par espèce</div></div>
       </div>
       <div class="darrow">↓</div>
       <div class="drow">
-        <div class="dbox"><div class="t">FastAPI</div><div class="s">/identify · /growth · /map</div></div>
-        <div class="dbox"><div class="t">Leaflet</div><div class="s">carte + page démo</div></div>
+        <div class="dbox"><div class="t">Probabilité de pousse</div><div class="s">par espèce · par jour</div></div>
+        <div class="dbox"><div class="t">Carte Leaflet</div><div class="s">heatmap 0 → 1</div></div>
       </div>
     </div>
-    <div class="notes">3 briques de données → 2 familles de modèles → 1 API + carte. C'est le fil rouge de toute la soutenance.</div>
+    <div class="notes">Filière partie 1 : GBIF (présences) + Open-Meteo (météo) + SoilGrids (sol) → pseudo-absences « effort prouvé » + 13 features → un LightGBM par espèce → probabilité de pousse → carte.</div>
+  </section>
+
+  <!-- Vue d'ensemble : partie 2 (vision) -->
+  <section class="slide">
+    <h2>Vue d'ensemble — partie 2 (vision)</h2>
+    <div class="diagram" style="margin-top:3vh">
+      <div class="drow">
+        <div class="dbox"><div class="t">Photos</div><div class="s">DF20 + espèces cibles (20 classes)</div></div>
+        <div class="dbox"><div class="t">ConvNeXt-Base</div><div class="s">pré-entraîné, fine-tuné</div></div>
+      </div>
+      <div class="darrow">↓</div>
+      <div class="dlabel">calibration (temperature scaling) + matrice de coût</div>
+      <div class="drow">
+        <div class="dbox"><div class="t">Décision</div><div class="s">comestible / toxique / abstention</div></div>
+      </div>
+      <div class="darrow">↓</div>
+      <div class="drow">
+        <div class="dbox"><div class="t">FastAPI /identify</div><div class="s">top-3 + badge de danger</div></div>
+      </div>
+    </div>
+    <div class="notes">Filière partie 2 : photos → ConvNeXt (20 classes) → probabilités calibrées → décision à coût (sécurité) → réponse top-3 avec abstention si doute.</div>
   </section>
 
   <!-- 3. Données partie 1 -->
@@ -237,26 +265,42 @@
     </ul>
     <h3>Pourquoi N modèles plutôt qu'un seul ?</h3>
     <p class="muted small">Question de jury légitime → répondue par une ablation (slide suivante).</p>
+    <div class="footer-note">MLflow versionne chaque run (baselines, ablations, calibration) → reproductibilité.</div>
   </section>
 
   <!-- 7. Résultats partie 1 -->
   <section class="slide">
     <h2>Résultats — pousse (AUC par espèce, LOOCV)</h2>
-    <table>
-      <thead><tr><th>Espèce</th><th class="num">AUC</th></tr></thead>
-      <tbody>
-        <tr><td>Trompette de la mort</td><td class="num">0.885</td></tr>
-        <tr><td>Lépiote élevée (coulemelle)</td><td class="num">0.882</td></tr>
-        <tr><td>Cèpe d'été</td><td class="num">0.862</td></tr>
-        <tr><td>Bolet bai</td><td class="num">0.821</td></tr>
-        <tr><td>Pied de mouton</td><td class="num">0.817</td></tr>
-        <tr><td>Morille</td><td class="num">0.753</td></tr>
-        <tr><td>Cèpe de Bordeaux</td><td class="num">0.749</td></tr>
-        <tr><td>Girolle</td><td class="num">0.722</td></tr>
-        <tr class="hl"><td>Moyenne</td><td class="num">0.811</td></tr>
-      </tbody>
-    </table>
-    <p class="caption">13 features (pruned + day_of_year). Sans <code>day_of_year</code> : 0.760 → l'ajout de la saison rapporte +0.05.</p>
+    <div class="cols">
+      <div class="col-2">
+        <table>
+          <thead><tr><th>Espèce</th><th class="num">AUC</th></tr></thead>
+          <tbody>
+            <tr><td>Trompette de la mort</td><td class="num">0.885</td></tr>
+            <tr><td>Lépiote élevée (coulemelle)</td><td class="num">0.882</td></tr>
+            <tr><td>Cèpe d'été</td><td class="num">0.862</td></tr>
+            <tr><td>Bolet bai</td><td class="num">0.821</td></tr>
+            <tr><td>Pied de mouton</td><td class="num">0.817</td></tr>
+            <tr><td>Morille</td><td class="num">0.753</td></tr>
+            <tr><td>Cèpe de Bordeaux</td><td class="num">0.749</td></tr>
+            <tr><td>Girolle</td><td class="num">0.722</td></tr>
+            <tr class="hl"><td>Moyenne</td><td class="num">0.811</td></tr>
+          </tbody>
+        </table>
+        <p class="caption">13 features (pruned + day_of_year). Sans <code>day_of_year</code> : 0.760 → l'ajout de la saison rapporte +0.05.</p>
+      </div>
+      <div class="col">
+        <div class="img-wrap" style="flex:0">
+          <img src="../reports/auc_p1_barchart.png" alt="AUC par espèce" style="max-height:32vh">
+        </div>
+        <div class="gloss" style="margin-top:1.2vh">
+          <div class="t">Lexique express</div>
+          <p><span class="term">AUC</span> : aire sous la courbe ROC — on balaye tous les seuils, on trace vrais positifs vs faux positifs, on intègre l'aire. Concrètement : la probabilité qu'un jour « pousse » tiré au hasard soit mieux classé qu'un jour « ne pousse pas ». <strong>0,5 = hasard · 1 = parfait</strong>.</p>
+          <p><span class="term">LOOCV</span> : leave-one-out par année — on entraîne sur toutes les années sauf une, on prédit l'année retirée, répété pour chaque année. <strong>Aucune fuite temporelle</strong>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="notes">L'AUC par espèce évite qu'une espèce facile gonfle une moyenne globale. La LOOCV par année écarte toute fuite temporelle (le jour J et J+1 sont très corrélés). Le spread 0,72–0,89 reflète la difficulté du signal : girolle et cèpe sont plus diffus, trompette et lépiote plus nettement saisonnées.</div>
   </section>
 
   <!-- 8. Ablation -->
@@ -286,6 +330,7 @@
         <p class="small muted">→ N modèles conservés, à 8 espèces à phénologies opposées. Un modèle unique se justifierait à 100+ espèces.</p>
       </div>
     </div>
+    <div class="notes">La morille est la seule espèce de printemps, noyée dans ~60 000 lignes d'espèces d'automne : le modèle unique la prédit à l'envers (0,465 &lt; 0,5). C'est la preuve la plus nette que mutualiser des phénologies opposées ne marche pas. Script : src/champiquest/models/evaluate_ablation.py.</div>
   </section>
 
   <!-- 9. SHAP -->
@@ -334,14 +379,15 @@
     <h2>Reconnaissance visuelle (partie 2)</h2>
     <ul>
       <li>Base : <strong>DF20</strong> (dataset d'images existant) + espèces cibles + <code>other_fungus</code> (champis hors cible) + <code>non-champi</code>.</li>
-      <li><strong>20 classes</strong>, dont les « faux amis » (sosies dangereux) sur-échantillonnés.</li>
+      <li><strong>20 classes</strong>, dont les « faux amis » (sosies dangereux) : rares, donc <strong>sur-pondérés</strong> à l'entraînement (sinon ignorés). <span class="muted">Ex. : Bolet Satan (sosie toxique du cèpe) — 155 images, contre ~370 en moyenne.</span></li>
       <li>Modèle : <strong>ConvNeXt-Base</strong> pré-entraîné, fine-tuné.</li>
       <li>Métadonnées des vues (chapeau / lames / pied) exploitées en multi-photos.</li>
     </ul>
-    <div class="img-wrap" style="flex:1">
-      <img src="../reports/eda_partie2_distribution.png" alt="distribution des classes">
-      <div class="caption">Distribution des classes (partie vision).</div>
+    <div class="row-imgs" style="align-items:flex-start">
+      <img src="../reports/eda_partie2_distribution.png" alt="distribution des classes" style="max-height:42vh">
+      <img src="../reports/eda_partie2_negatives.png" alt="exemples négatifs" style="max-height:42vh">
     </div>
+    <p class="caption">Distribution des 20 classes &amp; exemples de la classe « non-champi » (pas un champignon).</p>
   </section>
 
   <!-- 12. Sécurité -->
@@ -365,6 +411,11 @@
         <div class="big">0 erreur dangereuse</div>
         <p class="muted">après calibration + décision à coût.</p>
         <p class="small">L'argmax seul en commettait 2,8 % (comestible prédit toxique) — la matrice de coût les élimine.</p>
+        <div class="gloss" style="margin-top:2vh">
+          <div class="t">Lexique</div>
+          <p><span class="term">Temperature scaling</span> : on divise les logits par une température apprise → vraies probabilités (l'argmax ne change pas).</p>
+          <p><span class="term">Matrice de coût</span> : on choisit la classe qui minimise le <em>coût attendu</em>, pas la plus probable.</p>
+        </div>
       </div>
     </div>
     <div class="notes">Insister : la dangerosité n'est PAS mise dans la loss (on garde une loss propre), elle est appliquée en post-traitement via la matrice de coût + l'abstention. Détails dans reports/ajout-especes-calibration.md.</div>
@@ -384,40 +435,78 @@
             <tr><td>Étranger → comestible (coût)</td><td class="num">1.4 % (bénin)</td></tr>
           </tbody>
         </table>
-        <p class="small muted">Nouvelles classes : trompette F1 0.941, pied de mouton 0.855.</p>
+        <div class="gloss" style="margin-top:1.5vh">
+          <div class="t">Lexique</div>
+          <p><span class="term">Macro-F1</span> : moyenne du F1 de chaque classe, non pondérée par sa taille → les classes rares comptent autant que les majoritaires.</p>
+        </div>
       </div>
-      <div class="col">
-        <img src="../reports/partie2_confusion_matrix.png" alt="matrice de confusion" style="max-width:100%; max-height:55vh; border-radius:6px">
+      <div class="col-2">
+        <div class="img-wrap">
+          <img src="../reports/partie2_confusion_matrix.png" alt="matrice de confusion" style="max-height:56vh">
+          <div class="caption">Matrice de confusion (20 classes).</div>
+        </div>
       </div>
     </div>
+    <div class="notes">Le macro-F1 (0.841) est non pondéré : chaque classe compte autant, même les rares. Le vrai indicateur de sécurité reste « 0 erreur dangereuse » après calibration + coût, pas l'accuracy brute.</div>
+  </section>
+
+  <!-- Résultats par classe -->
+  <section class="slide">
+    <h2>Résultats — F1 par classe</h2>
+    <div class="img-wrap">
+      <img src="../reports/partie2_per_class_metrics.png" alt="F1 par classe" style="max-height:62vh">
+      <div class="caption">F1 par classe (20 classes) — les sosies toxiques et mortels restent bien reconnus.</div>
+    </div>
+    <div class="notes">Les deux scores les plus bas sont des confusions bénignes entre bolets (tous comestibles ou non-toxiques) : le cèpe d'été (F1 0,53) est confondu 20 fois sur 53 avec le cèpe de Bordeaux — son sosie quasi parfait, 2,6× plus représenté (901 vs 343 images) ; le cèpe des pins (F1 0,25) n'a que 70 images d'entraînement (11 en test) et ses erreurs partent vers le bolet bai et le cèpe. Classification fine (espèces jumelles) aggravée par le faible effectif — jamais un danger.</div>
   </section>
 
   <!-- 14. Explicabilité vision -->
   <section class="slide">
     <h2>Explicabilité vision (Grad-CAM)</h2>
-    <div class="img-wrap">
-      <img src="../reports/partie2_gradcam.png" alt="grad-cam">
-      <div class="caption">Grad-CAM : où le modèle regarde pour décider.</div>
+    <div class="cols">
+      <div class="col-2">
+        <div class="img-wrap">
+          <img src="../reports/partie2_gradcam.png" alt="grad-cam">
+          <div class="caption">Grad-CAM : où le modèle regarde pour décider (réel | heatmap).</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="img-wrap" style="flex:0">
+          <img src="../reports/partie2_training_curves.png" alt="courbes d'entraînement" style="max-height:20vh">
+          <div class="caption">Courbes d'entraînement (loss / F1).</div>
+        </div>
+        <ul class="small" style="margin-top:2vh">
+          <li>Le modèle se focalise sur le <strong>champignon</strong> (chapeau, lames), pas sur le fond.</li>
+          <li>Même sur les <strong>sosies</strong>, la zone d'intérêt est discriminante → on peut faire confiance à la décision.</li>
+        </ul>
+      </div>
     </div>
-    <div class="img-wrap" style="flex:0">
-      <img src="../reports/partie2_training_curves.png" alt="courbes d'entraînement" style="max-height:24vh">
-      <div class="caption">Courbes d'entraînement (loss / F1).</div>
-    </div>
+    <div class="notes">Grad-CAM : on propage le gradient de la classe prédite jusqu'à la dernière couche convolutive. Chaque canal de la feature map est pondéré par la moyenne de son gradient (= son « importance » pour la décision), puis on somme les canaux → heatmap des pixels qui activent la prédiction, superposée à l'image (colormap « jet »). Garde-fou : si la zone chaude est sur le fond plutôt que sur le champignon, le modèle se trompe de signal. Code : src/champiquest/vision/explain.py.</div>
   </section>
 
   <!-- 15. Interface -->
   <section class="slide">
     <h2>Interface &amp; démo</h2>
-    <ul>
-      <li><strong>Page de démo</strong> : upload d'une photo → décision (comestible / toxique / à éviter / autre) + top-3 + badge de danger.</li>
-      <li><strong>Carte interactive</strong> (Leaflet) : slider sur les dates, sélection des espèces, légende 0→1.</li>
-      <li>Resize côté client (≤ 1 MPx) avant envoi → léger.</li>
-    </ul>
-    <div class="badges">
-      <span class="badge">/identify</span>
-      <span class="badge">/growth/predict</span>
-      <span class="badge">/map</span>
-      <span class="badge">/demo</span>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li><strong>Page de démo</strong> : upload d'une photo → décision (comestible / toxique / à éviter / autre) + top-3 + badge de danger.</li>
+          <li><strong>Carte interactive</strong> (Leaflet) : slider sur les dates, sélection des espèces, légende 0→1.</li>
+          <li>Resize côté client (≤ 1 MPx) avant envoi → léger.</li>
+        </ul>
+        <div class="badges">
+          <span class="badge">/identify</span>
+          <span class="badge">/growth/predict</span>
+          <span class="badge">/map</span>
+          <span class="badge">/demo</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="img-wrap">
+          <img src="demo_identify.png" alt="interface de reconnaissance">
+          <div class="caption">Page de démo — identification d'une photo (top-3 + décision).</div>
+        </div>
+      </div>
     </div>
     <div class="footer-note">Smoke test sur les 5 endpoints réels (health / species / growth / identify / map).</div>
   </section>
@@ -441,11 +530,12 @@
     <h2>Limites &amp; perspectives</h2>
     <ul>
       <li><strong>Précision GBIF (~1 km)</strong> = plafond réel : impossible de relier une observation à « l'arbre sous lequel elle a poussé ».</li>
-      <li>Perspective habitat : <strong>BD Forêt V2 (IGN)</strong> + SDM presence-only — documenté, non implémenté au MVP.</li>
-      <li><strong>Cron</strong> pour automatiser le refresh météo + la carte chaque jour.</li>
+      <li>Perspective habitat : <strong>BD Forêt V2 (IGN)</strong> (32 essences, 0,5 ha) + <strong>SDM presence-only</strong> → associer l'espèce à son essence (cèpe → chênaie) — documenté, hors MVP.</li>
+      <li><strong>Airflow</strong> pour orchestrer le refresh météo + la carte chaque jour (DAG, retries, monitoring) — plutôt qu'un simple cron.</li>
       <li>Étendre la vision à plus d'espèces (le pipeline d'ajout est documenté et générique).</li>
     </ul>
     <p class="muted small">Anti-sur-ingénierie assumée : périmètre MVP, chaque ajout testé par ablation.</p>
+    <div class="notes">Le plafond réel est la précision GBIF (~1 km) : impossible de relier une observation à « l'arbre sous lequel elle a poussé » — c'est pour ça que les features habitat (clc_code) sont quasi mortes (+0,002 à l'ablation). D'où la piste BD Forêt V2 (IGN, 32 essences, 0,5 ha) + SDM presence-only : modéliser l'habitat par essence (cèpe → chênaie/hêtraie) là où la précision GPS compte moins. Documenté, hors MVP.</div>
   </section>
 
   <!-- 18. Conclusion -->

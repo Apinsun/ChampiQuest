@@ -351,6 +351,46 @@ pénalise.
 (chêne, hêtre, pin, sapin, épicéa…), résolution 0,5 ha — serait le bon outil pour une
 **couche d'habitat potentiel par espèce** (cèpe → chênaies/hêtraies/pessières ; girolle →
 hêtraies-sapinières). C'est un projet de type **SDM presence-only** (MaxEnt-like), où la
-précision des coordonnées devient moins critique (agrégation à la cellule). Pas pour le MVP :
-l'ablation montre que le type de forêt (`clc_code` 311/312/313) n'apporte déjà rien au modèle
-growth (+0.002).
+précision des coordonnées devient moins critique (agrégation à la cellule).
+
+**Précision de lecture** : l'ablation montre que `clc_code` n'apporte rien **au classifieur**
+(+0.002) — pas que l'habitat est inutile. Le classifieur ne peut pas l'exploiter parce que ses
+pseudo-absences (« effort prouvé ») sont dans les mêmes forêts que ses présences : les deux
+classes partagent l'habitat, la feature ne les sépare pas. Le SDM presence-only travaille sur
+un contraste différent (présences vs paysage entier) où ce signal peut ressortir.
+
+### Combinaison SDM × classifieur
+
+On factorise : `P(pousse | x, d) ≈ H(x) × P_fruct(d, x)`.
+
+- `H(x)` — SDM : aptitude d'habitat (statique, **par espèce**) = le « où ».
+- `P_fruct(d, x)` — LightGBM **inchangé** (météo + saison) = le « quand ».
+- Le SDM **remplace le masque CLC** par un facteur continu, appris, propre à chaque espèce.
+- Pipeline : 1 raster `H(x)` par espèce (recréé rarement) × carte météo quotidienne.
+
+### Protocole de validation (3 niveaux)
+
+1. **SDM seul** — AUC présence vs background en validation croisée **spatiale** (blocs, pas de
+   points aléatoires → évite l'autocorrélation). Background « target-group » (même biais
+   spatial que les présences, ex. toutes les observations fongiques GBIF de la zone) pour
+   apprendre l'habitat, pas « où les gens marchent ». Critère : une présence hors entraînement
+   mieux classée qu'un point de fond (AUC > 0,5).
+2. **Produit H × P_fruct** — blocs spatiaux entiers tenus hors des deux entraînements : le
+   score combiné doit y dépasser celui des points de fond. Le « quand » reste validé par la
+   LOOCV du classifieur (0,811), inchangée.
+3. **Qualitatif / écologique** — carte cohérente avec la mycologie (cèpe → chênaie/hêtraie,
+   girolle → hêtraie-sapinière), spécifique par espèce, villes sombres, hors-saison éteint.
+
+**Limite assumée** : sans relevés de terrain, on valide un classement relatif + la plausibilité
+écologique, pas une probabilité absolue calibrée. Suffisant pour un outil « où aller chercher ».
+
+### Ce qu'un test demanderait
+
+1. **Prototype sans nouvelle donnée (d'abord)** : presence/background avec l'existant (CLC,
+   altitude/pente, sol SoilGrids) pour valider la méthode avant d'investir.
+2. **BD Forêt® V2 (IGN)** : le vrai coût — téléchargement portail IGN (compte + extraction
+   bbox Vosges/Forêt-Noire) puis vectoriel → raster.
+3. **Modèle** : régression logistique présence vs background (sklearn, déjà dispo, ≈ MaxEnt
+   avec L1) ; `elapid` en option.
+4. **Effort** : surtout du plumbing de données ; la modélisation ≈ 150 lignes. Réaliste en
+   1-2 jours, sur une branche dédiée.

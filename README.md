@@ -147,6 +147,8 @@ presentation/       slides de soutenance (index.html, imprimable en PDF)
 
 ## Documentation
 
+- `reports/rapport-conduite-projet.md` — **rapport de conduite de projet** (le livrable : besoin → solution → bilan).
+- `reports/glossaire.md` — explication pédagogique des termes (AUC, LOOCV, GBIF, calibration…).
 - `reports/partie-1-prediction-pousse.md` — design partie 1 (données, features, modèles).
 - `reports/partie-2-reconnaissance-image.md` — vision, calibration, coût.
 - `reports/partie-3-api-carte.md` — architecture stockage/calcul/serveur.

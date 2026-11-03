@@ -108,9 +108,13 @@ def main() -> None:
             examples.append((cls, row["file"]))
     print(f"{len(examples)} exemples à expliquer")
 
-    fig, axes = plt.subplots(len(examples), 2, figsize=(10, 3.2 * len(examples)))
-    if len(examples) == 1:
-        axes = axes[None, :]
+    # Montage compact : 2 paires (réel | heatmap) par ligne → rendu quasi
+    # carré, lisible en présentation, plutôt qu'une colonne verticale.
+    pairs_per_row = 2
+    n_rows = -(-len(examples) // pairs_per_row)  # division entière arrondie au supérieur
+    n_cols = 2 * pairs_per_row
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(3.0 * n_cols, 3.0 * n_rows))
+    axes = np.atleast_2d(axes)
 
     for i, (true_cls, fpath) in enumerate(examples):
         img_pil = Image.open(fpath).convert("RGB").resize((input_size, input_size))
@@ -124,12 +128,21 @@ def main() -> None:
         cam = grad_cam(model, tensor, pred)
         over = overlay(img_pil, cam)
 
-        axes[i, 0].imshow(img_pil)
-        axes[i, 0].set_title(f"réel : {true_cls}", fontsize=9)
-        axes[i, 0].axis("off")
-        axes[i, 1].imshow(over)
-        axes[i, 1].set_title(f"prédit : {pred_name} (p={probs[pred]:.2f})", fontsize=9)
-        axes[i, 1].axis("off")
+        r, c = divmod(i, pairs_per_row)
+        c *= 2
+        axes[r, c].imshow(img_pil)
+        axes[r, c].set_title(f"réel : {true_cls}", fontsize=9)
+        axes[r, c].axis("off")
+        axes[r, c + 1].imshow(over)
+        axes[r, c + 1].set_title(f"prédit : {pred_name} (p={probs[pred]:.2f})", fontsize=9)
+        axes[r, c + 1].axis("off")
+
+    # cellules vides de la dernière ligne (si nombre impair de paires) : masquées
+    for j in range(len(examples), n_rows * pairs_per_row):
+        r, c = divmod(j, pairs_per_row)
+        c *= 2
+        axes[r, c].axis("off")
+        axes[r, c + 1].axis("off")
 
     plt.tight_layout()
     out = REPORTS_DIR / "partie2_gradcam.png"
