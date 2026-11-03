@@ -23,6 +23,13 @@
     }
     .legend { font-size: 13px; color: #444; display: flex; align-items: center; gap: 8px; }
     .hint { font-size: 12px; color: #777; }
+    .season-badge {
+      display: block; /* sur sa propre ligne, sous la date */
+      margin-top: 2px;
+      font-size: 12px; font-weight: 600; color: #8a6d00;
+      visibility: hidden; /* ligne réservée : aucun décalage à l'apparition */
+    }
+    .season-badge.on { visibility: visible; }
   </style>
 </head>
 <body>
@@ -31,6 +38,7 @@
       <label for="date">Date :</label>
       <input type="range" id="date" min="0" max="3" step="1" value="0">
       <strong id="dateLabel"></strong>
+      <span id="seasonBadge" class="season-badge">hors saison</span>
     </div>
     <div>
       <span class="hint">Espèces (aucune cochée = tout confondu) :</span>
@@ -102,13 +110,15 @@
         outOfSeason = true;
       }
 
+      // badge « hors saison » : espace réservé (visibility) → la date reste stable
+      document.getElementById("seasonBadge").classList.toggle("on", outOfSeason);
+      document.getElementById("dateLabel").textContent = date;
+
       if (outOfSeason) {
-        document.getElementById("dateLabel").textContent = date + " — hors saison";
         return;
       }
 
       overlay = L.imageOverlay(url, BBOX, { opacity: 0.8 }).addTo(map);
-      document.getElementById("dateLabel").textContent = date;
     }
 
     const spDiv = document.getElementById("species");

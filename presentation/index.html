@@ -365,11 +365,12 @@
           <li>Échelle fixe 0→1 (comparable entre espèces/dates).</li>
         </ul>
       </div>
-      <div class="col map-frame">
-        <div class="img-wrap">
-          <img src="map_example.png" alt="carte de prédiction">
-          <div class="caption">Heatmap des probabilités de pousse (Vosges / Forêt-Noire).</div>
+      <div class="col-2">
+        <div class="row-imgs" style="align-items:flex-start">
+          <img src="map_capture1.png" alt="carte interactive" style="max-height:52vh">
+          <img src="map_capture2.png" alt="carte interactive" style="max-height:52vh">
         </div>
+        <p class="caption">Carte interactive (Leaflet) — heatmap + slider de dates.</p>
       </div>
     </div>
   </section>
@@ -514,28 +515,79 @@
   <!-- 16. Déploiement -->
   <section class="slide">
     <h2>Déploiement (Docker + CI/CD)</h2>
-    <ul>
-      <li><strong>Image Docker</strong> : Python 3.12 slim, dépendances runtime uniquement ; modèles &amp; données en volume (pas dans l'image).</li>
-      <li><strong>CI</strong> (toutes branches) : 14 tests (pytest) — anti-fuite, décision à coût, store météo, API.</li>
-      <li><strong>CD</strong> (main + tags) : build + push vers <strong>GHCR</strong>, avec cache de layers (pull incrémental).</li>
-      <li>Modèles légers (LightGBM / ConvNeXt CPU) — pas besoin de GPU en prod.</li>
-    </ul>
-    <div class="badges">
-      <span class="badge">Docker</span><span class="badge">GitHub Actions</span><span class="badge">GHCR</span><span class="badge">pytest</span>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li><strong>Image Docker</strong> : Python 3.12 slim, dépendances runtime uniquement ; modèles &amp; données en volume (pas dans l'image).</li>
+          <li><strong>CI</strong> (toutes branches) : 14 tests (pytest) — anti-fuite, décision à coût, store météo, API.</li>
+          <li><strong>CD</strong> (main + tags) : build + push vers <strong>GHCR</strong>, avec cache de layers (pull incrémental).</li>
+          <li>Modèles légers (LightGBM / ConvNeXt CPU) — pas besoin de GPU en prod.</li>
+        </ul>
+        <div class="badges">
+          <span class="badge">Docker</span><span class="badge">GitHub Actions</span><span class="badge">GHCR</span><span class="badge">pytest</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="diagram">
+          <div class="drow">
+            <div class="dbox"><div class="t">git push</div><div class="s">main / tag</div></div>
+          </div>
+          <div class="darrow">↓</div>
+          <div class="drow">
+            <div class="dbox"><div class="t">CI</div><div class="s">14 tests pytest</div></div>
+            <div class="dbox"><div class="t">Build</div><div class="s">cache de layers</div></div>
+          </div>
+          <div class="darrow">↓</div>
+          <div class="drow">
+            <div class="dbox"><div class="t">Push GHCR</div><div class="s">registre d'images</div></div>
+          </div>
+          <div class="darrow">↓</div>
+          <div class="drow">
+            <div class="dbox"><div class="t">Serveur</div><div class="s">docker-compose · modèles en volume</div></div>
+          </div>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <!-- 16b. Précision GBIF : plafond du projet -->
+  <section class="slide">
+    <h2>La précision GBIF, plafond du projet</h2>
+    <p>Coordonnées souvent floutées à <strong>~1 km</strong> → impossible de relier une observation à « l'arbre sous lequel elle a poussé ».</p>
+    <div class="cols">
+      <div class="col">
+        <h3>Dans le classifieur</h3>
+        <ul>
+          <li>Features habitat (type de forêt) : <span class="danger">+0,002 d'AUC</span> (ablation) → mortes.</li>
+          <li>Les pseudo-absences partagent le même habitat que les présences → la feature ne discrimine pas.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Même avec un SDM dédié (testé)</h3>
+        <ul>
+          <li>BD Forêt V2 (0,5 ha) + présence vs background → <span class="danger">AUC 0,47–0,57 ≈ hasard</span>.</li>
+          <li><span class="danger">86 à 98 %</span> des points tombent hors du bon polygone forestier.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="gloss" style="margin-top:1.5vh">
+      <div class="t">SDM — Species Distribution Modeling</div>
+      <p><span class="term">Prédit où</span> une espèce vit à partir des conditions environnementales de ses observations. <span class="term">Presence-only</span> : pas besoin d'absences — on compare les présences à des points de fond du paysage.</p>
+    </div>
+    <p class="muted">→ Le signal d'habitat fin est <strong>irrésolvable</strong> avec cette précision GPS. Le masque CLC (robuste au bruit) reste le bon compromis.</p>
+    <div class="notes">On a testé l'idée la plus naturelle : un SDM presence-only sur la donnée forestière la plus fine (BD Forêt V2, 0,5 ha). Résultat : AUC ≈ 0,5, car les coordonnées GBIF (~1 km) ne tombent presque jamais dans le bon polygone (86–98 % hors forêt). La limite est la donnée, pas la modélisation — c'est mesuré, pas supposé.</div>
   </section>
 
   <!-- 17. Limites & perspectives -->
   <section class="slide">
     <h2>Limites &amp; perspectives</h2>
     <ul>
-      <li><strong>Précision GBIF (~1 km)</strong> = plafond réel : impossible de relier une observation à « l'arbre sous lequel elle a poussé ».</li>
-      <li>Perspective habitat : <strong>BD Forêt V2 (IGN)</strong> (32 essences, 0,5 ha) + <strong>SDM presence-only</strong> → associer l'espèce à son essence (cèpe → chênaie) — documenté, hors MVP.</li>
+      <li><strong>Précision GBIF (~1 km)</strong> = plafond réel : même un SDM dédié échoue (AUC ≈ 0,5, testé — slide précédente).</li>
       <li><strong>Airflow</strong> pour orchestrer le refresh météo + la carte chaque jour (DAG, retries, monitoring) — plutôt qu'un simple cron.</li>
       <li>Étendre la vision à plus d'espèces (le pipeline d'ajout est documenté et générique).</li>
     </ul>
     <p class="muted small">Anti-sur-ingénierie assumée : périmètre MVP, chaque ajout testé par ablation.</p>
-    <div class="notes">Le plafond réel est la précision GBIF (~1 km) : impossible de relier une observation à « l'arbre sous lequel elle a poussé » — c'est pour ça que les features habitat (clc_code) sont quasi mortes (+0,002 à l'ablation). D'où la piste BD Forêt V2 (IGN, 32 essences, 0,5 ha) + SDM presence-only : modéliser l'habitat par essence (cèpe → chênaie/hêtraie) là où la précision GPS compte moins. Documenté, hors MVP.</div>
+    <div class="notes">La précision GBIF (~1 km) est le plafond réel, mesuré (SDM BD Forêt V2 → AUC ≈ 0,5). Perspectives restantes : l'orchestration Airflow du pipeline quotidien et l'extension de la vision à plus d'espèces.</div>
   </section>
 
   <!-- 18. Conclusion -->
@@ -579,10 +631,6 @@
     else if (e.key === 'End') show(slides.length - 1);
     else if (e.key.toLowerCase() === 'f') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
     else if (e.key.toLowerCase() === 'n') { notesPanel.classList.toggle('on'); refreshNotes(); }
-  });
-  document.addEventListener('click', e => {
-    if (e.clientX > window.innerWidth * 0.7) show(i + 1);
-    else if (e.clientX < window.innerWidth * 0.3) show(i - 1);
   });
   const h = parseInt(location.hash.slice(1), 10);
   if (h >= 1 && h <= slides.length) show(h - 1);

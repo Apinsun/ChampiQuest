@@ -394,3 +394,21 @@ On factorise : `P(pousse | x, d) ≈ H(x) × P_fruct(d, x)`.
    avec L1) ; `elapid` en option.
 4. **Effort** : surtout du plumbing de données ; la modélisation ≈ 150 lignes. Réaliste en
    1-2 jours, sur une branche dédiée.
+
+### Résultat du test (abandonné) — la précision GPS tue le signal d'essence
+
+Testé sur une branche dédiée (`experiment/habitat-sdm`) avec la **BD Forêt® V2** (Grand Est,
+150 256 polygones, 32 essences) + les présences GBIF des 8 espèces. Méthode : régression
+logistique présence vs background (fond « target-group » = `all_fungi.csv`, 10 000 points),
+AUC en validation croisée spatiale (blocs k-means).
+
+Résultat : **AUC 0,47–0,57 selon l'espèce ≈ hasard**. Le diagnostic est sans ambiguïté : en
+*point-in-polygon* à 0,5 ha (la finesse de la donnée forestière), **86 % (cèpe) à 98 %
+(morille) des points de présence tombent hors de tout polygone forestier** — les coordonnées
+GBIF (~1 km d'imprécision) ne résolvent pas l'essence du peuplement exact.
+
+Conclusion : le signal d'essence fine est **irrésolvable** avec cette précision GPS, quelle
+que soit la méthode. C'est la confirmation empirique que la limite structurante du projet est
+la donnée (GBIF), pas la modélisation — et que le masque CLC post-hoc (robuste au bruit) était
+le bon compromis. Une agrégation à ~1 km (type dominant dans un buffer) ne résoudrait au mieux
+que « forêt vs non-forêt », déjà couvert par CLC.
