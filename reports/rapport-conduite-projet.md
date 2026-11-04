@@ -43,12 +43,21 @@ l'absence de **GPU en production** impose une inférence CPU ; la **sécurité**
 zéro erreur dangereuse (un comestible annoncé sur toxique) ; les **quotas des API
 météo** imposent un stockage local avec cache ; enfin, le **délai** est de trois semaines.
 
+### Matrice des risques
+
+| Risque | Impact | Parade |
+|---|---|---|
+| **Technique** — environnement GPU instable (driver CUDA bêta, cuDNN planté) | entraînement ralenti | cuDNN désactivé (workaround) ; déploiement en inférence CPU |
+| **Données** — GBIF presence-only, coordonnées floutées (~1 km) | plafonne la précision | pseudo-absences « effort prouvé » ; habitat fin écarté après test |
+| **Métier/sécurité** — annoncer comestible un toxique | critique | calibration + matrice de coût + abstention → 0 erreur dangereuse |
+| **Juridique/éthique** — santé publique, licences des données | responsabilité | disclaimer pédagogique dans la démo ; données en usage recherche |
+
 ### Critères de succès (mesurables)
 
 | Critère | Objectif | Atteint |
 |---|---|---|
-| Partie 1 — AUC* LOOCV* par espèce | > 0,7 | **0,811** |
-| Partie 2 — erreur dangereuse (coût) | 0 | **0,0 %** |
+| Partie 1 — AUC* LOOCV* par espèce (moyenne) | > 0,7 | **0,811** (min 0,722 – max 0,885) |
+| Partie 2 — erreur dangereuse (coût) | 0 | **0,0 %** (sur 145 images de test toxiques/mortelles) |
 | Partie 3 — API + carte + démo déployées, tests verts | oui | **oui** (14 tests) |
 
 ### Périmètre MVP
@@ -81,6 +90,17 @@ Détails : architecture (`architecture.md`), features et ablations
 
 ## 4. Réalisation
 
+### Planning & arbitrages
+
+| Semaine | Prévu | Réalisé / imprévu |
+|---|---|---|
+| 1 | partie 1 (météo → pousse) | + changement de fournisseur sol (indispo au forecast), fuite des proxies corrigée |
+| 2 | partie 2 (vision) | + workaround GPU (cuDNN désactivé, entraînement sur RTX 3090) |
+| 3 | API, carte, Docker/CI-CD | + arbitrage périmètre : cron et habitat fin reportés hors MVP |
+
+Le délai a été tenu en arbitrant sur le **périmètre**, jamais sur la vérification :
+baselines, ablations et tests sont restés non négociables.
+
 ### Méthode
 
 Le projet a été mené de façon **itérative** : partir d'une baseline simple, la mesurer
@@ -94,11 +114,11 @@ du raisonnement.
 
 Le projet a rencontré quelques difficultés de fond, au-delà des aléas techniques habituels.
 
-**L'environnement GPU** a d'abord été une source de friction : des problèmes de versions
-de drivers (CUDA en version bêta, incompatibilités cuDNN) ont obligé à désactiver
-certaines optimisations à l'entraînement et, plus largement, à concevoir le déploiement
-en **inférence CPU**. Ce choix, contraint au départ, s'est révélé cohérent avec une démo
-légère qui n'exige pas de GPU.
+**L'environnement GPU** a d'abord été une source de friction : des problèmes de drivers
+(CUDA en version bêta, incompatibilités cuDNN) ont obligé à **désactiver cuDNN** à
+l'entraînement — le fine-tuning tournait bien sur une **RTX 3090**, mais ~10-20 % plus
+lent — et, plus largement, à concevoir le déploiement en **inférence CPU**. Ce choix,
+contraint au départ, s'est révélé cohérent avec une démo légère qui n'exige pas de GPU.
 
 **Le manque de données** a été la difficulté centrale : GBIF ne fournit que des présences,
 et certaines espèces n'étaient représentées que par un faible nombre d'observations. On
@@ -125,6 +145,15 @@ Quatorze tests (pytest) couvrent l'anti-fuite, la décision à coût, le store m
 l'API. La **CI** les exécute sur toutes les branches et les pull requests, tandis que la
 **CD** construit et pousse l'image Docker vers GHCR sur `main` et les tags, avec un cache
 de layers qui rend les pulls incrémentaux.
+
+**Ressources maîtrisées** : store météo ~4 Mo, 8 modèles LightGBM ~400 Ko, checkpoint
+vision 335 Mo, cartes ~40 Ko par date. Le seul poste lourd est l'**image Docker (~9 Go à
+tirer)**, qui embarque torch CUDA alors que l'inférence est CPU — un allègement documenté,
+non retenu au MVP.
+
+**Maintien en condition opérationnelle** (identifié, non outillé au MVP) : surveiller le
+**data drift** (des saisons qui se décalent dégraderaient le modèle de pousse) et re-tester
+le store après tout changement de fournisseur météo.
 
 ---
 
@@ -158,9 +187,10 @@ l'inférence.
 
 ### Axes d'amélioration du projet
 
-Deux pistes prolongeraient le projet. D'abord, faire fonctionner l'entraînement **sur
-GPU** de façon fiable (les problèmes de drivers nous en ont privés, au profit de
-l'inférence CPU). Ensuite, trouver des données **géolocalisées plus précises** pour
+Deux pistes prolongeraient le projet. D'abord, **fiabiliser l'environnement GPU** : le
+fine-tuning a bien eu lieu sur une RTX 3090, mais avec cuDNN désactivé (incompatibilité
+driver, ~10-20 % de vitesse perdus) — réactiver cuDNN rendrait les futurs entraînements
+plus confortables. Ensuite, trouver des données **géolocalisées plus précises** pour
 faire jouer davantage l'**environnement** — exposition, habitat — dans les prédictions :
 c'est aujourd'hui le principal verrou, borné par la précision des coordonnées GBIF.
 
