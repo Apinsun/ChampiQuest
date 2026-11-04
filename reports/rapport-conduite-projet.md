@@ -151,9 +151,9 @@ confiance faible déclenche l'abstention, la calibration ne change jamais l'argm
 de layers qui rend les pulls incrémentaux.
 
 **Ressources maîtrisées** : store météo ~4 Mo, 8 modèles LightGBM ~400 Ko, checkpoint
-vision 335 Mo, cartes ~40 Ko par date. Le seul poste lourd est l'**image Docker (~9 Go à
-tirer)**, qui embarque torch CUDA alors que l'inférence est CPU — un allègement documenté,
-non retenu au MVP.
+vision 335 Mo, cartes ~40 Ko par date. Le seul poste lourd était l'**image Docker** :
+l'inférence tourne désormais en **torch CPU**, et le nettoyage du layer de dépendances
+(build CUDA, dépendances nvidia-*, cache de build) la ramène d'~20 Go à ~2 Go.
 
 **Maintien en condition opérationnelle** (identifié, non outillé au MVP) : surveiller le
 **data drift** (des saisons qui se décalent dégraderaient le modèle de pousse) et re-tester
