@@ -142,7 +142,11 @@ les résultats instables), corrigée par des graines par espèce, figées.
 ### MLOps
 
 Quatorze tests (pytest) couvrent l'anti-fuite, la décision à coût, le store météo et
-l'API. La **CI** les exécute sur toutes les branches et les pull requests, tandis que la
+l'API — l'anti-fuite par un test qui vérifie qu'aucun identifiant d'observation n'est
+partagé entre les splits de la vision, la décision à coût par quatre tests unitaires sur
+la couche de sécurité (un toxique très probable n'est jamais annoncé comestible, une
+confiance faible déclenche l'abstention, la calibration ne change jamais l'argmax). La
+**CI** les exécute sur toutes les branches et les pull requests, tandis que la
 **CD** construit et pousse l'image Docker vers GHCR sur `main` et les tags, avec un cache
 de layers qui rend les pulls incrémentaux.
 
