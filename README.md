@@ -87,6 +87,17 @@ poetry run python -m champiquest.mapgen --limit 10       # test rapide
 La carte couvre ~1634 points (grille ~5 km, Vosges / Forêt-Noire), 4 dates (J..J+3),
 échelle fixe 0→1, interpolation + lissage.
 
+### Suivi des expériences (MLflow)
+
+Les runs d'entraînement (baselines, ablations, calibration) sont tracés localement dans
+une base SQLite `mlflow.db` (expériences `champiquest` et `partie2-vision`).
+
+```bash
+poetry run mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+Puis ouvrir **http://localhost:5000**.
+
 ---
 
 ## Déploiement Docker
@@ -154,4 +165,5 @@ presentation/       slides de soutenance (index.html, imprimable en PDF)
 - `reports/partie-3-api-carte.md` — architecture stockage/calcul/serveur.
 - `reports/feature-engineering.md` — élagage, proxies, ablation modèle unique vs N.
 - `reports/ajout-especes-calibration.md` — process d'ajout d'espèce + calibration en profondeur.
+- `reports/evaluation-calibration.md` — méthodes d'évaluation (LOOCV, métriques) & calibration (Platt, temperature scaling).
 - `AGENTS.md` — règles de collaboration humain ↔ agent.

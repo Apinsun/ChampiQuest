@@ -17,6 +17,7 @@ from pathlib import Path
 import joblib
 import lightgbm as lgb
 import mlflow
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import roc_auc_score
 
 from champiquest.models.constants import LGB_CONFIGS, PRUNED_NUM_FEATURES
@@ -42,11 +43,18 @@ FEATURES = PRUNED_NUM_FEATURES  # 13 features (pruned + day_of_year), validé en
 
 
 def train_one(species: str):
-    """Entraîne le modèle final d'une espèce. Renvoie (model, df)."""
+    """Entraîne + calibre (Platt, CV=5) le modèle final d'une espèce. Renvoie (model, df).
+
+    `CalibratedClassifierCV(cv=5)` entraîne le LightGBM sur 5 folds, ajuste une
+    sigmoïde (Platt) sur les prédictions hors-fold, puis moyenne les modèles.
+    Le modèle sauvegardé expose un `predict_proba` calibré → le chemin de
+    prédiction (growth.py / mapgen.py) n'a pas besoin de changer.
+    """
     df = load_species(species, FEATURES)
-    model = lgb.LGBMClassifier(**LGB_CONFIGS["A_simple"], verbose=-1)
-    model.fit(df[FEATURES], df["target"])
-    return model, df
+    base = lgb.LGBMClassifier(**LGB_CONFIGS["A_simple"], verbose=-1)
+    calibrated = CalibratedClassifierCV(base, method="sigmoid", cv=5)
+    calibrated.fit(df[FEATURES], df["target"])
+    return calibrated, df
 
 
 def main() -> None:
@@ -72,7 +80,7 @@ def main() -> None:
         with mlflow.start_run(run_name=sp):
             mlflow.log_params({"species": sp, "n_rows": len(df), **LGB_CONFIGS["A_simple"]})
             mlflow.log_metrics({"auc_train": auc_train})
-            mlflow.lightgbm.log_model(model, "model")
+            mlflow.log_artifact(str(path))
 
         print(f"{sp:22s} : {len(df):6d} lignes | AUC train {auc_train:.3f} | {path.name}")
 

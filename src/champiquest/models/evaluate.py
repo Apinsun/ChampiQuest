@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import average_precision_score, brier_score_loss, confusion_matrix, f1_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -64,13 +64,17 @@ def make_lightgbm(cfg: dict):
     return lgb.LGBMClassifier(**cfg, verbose=-1)
 
 
-def loocv(df: pd.DataFrame, build_model, is_lgb: bool, features: list[str]) -> list[dict]:
+def loocv(df: pd.DataFrame, build_model, is_lgb: bool, features: list[str]) -> tuple[list[dict], np.ndarray]:
     """Leave-One-Year-Out : chaque année est testée une fois.
 
     Les proxies (espèces co-occurrentes ajoutées en présences) servent uniquement à
     l'entraînement : on les exclut du test pour mesurer la prédiction de la cible réelle.
+
+    Renvoie `(folds, cm)` : les métriques par année (AUC, AP, Brier, F1) et la
+    matrice de confusion cumulée sur tous les folds (seuil 0,5).
     """
     folds = []
+    cm = np.zeros((2, 2), dtype=int)
     for year in sorted(df["year"].unique()):
         train = df[df["year"] != year]
         test = df[(df["year"] == year) & ~((df["species"] == "proxy") & (df["target"] == 1))]
@@ -83,9 +87,17 @@ def loocv(df: pd.DataFrame, build_model, is_lgb: bool, features: list[str]) -> l
         else:
             model.fit(train[features], train["target"])
         proba = model.predict_proba(test[features])[:, 1]
-        auc = roc_auc_score(test["target"], proba)
-        folds.append({"year": int(year), "n_test": len(test), "auc": float(auc)})
-    return folds
+        pred = (proba >= 0.5).astype(int)
+        folds.append({
+            "year": int(year),
+            "n_test": len(test),
+            "auc": float(roc_auc_score(test["target"], proba)),
+            "ap": float(average_precision_score(test["target"], proba)),
+            "brier": float(brier_score_loss(test["target"], proba)),
+            "f1": float(f1_score(test["target"], pred, zero_division=0)),
+        })
+        cm += confusion_matrix(test["target"], pred, labels=[0, 1])
+    return folds, cm
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +154,7 @@ def random_search(species: str, features: list[str], n_iters: int, seed: int) ->
     for it in range(n_iters):
         cfg = _sample_cfg(rng)
         build = (lambda c=cfg: make_lightgbm(c))
-        folds = loocv(df, build, True, features)
+        folds, _ = loocv(df, build, True, features)
         auc = float(np.mean([f["auc"] for f in folds]))
         results.append((auc, cfg))
         print(f"[{it + 1}/{n_iters}] AUC {auc:.3f} | {_cfg_str(cfg)}", flush=True)
@@ -180,17 +192,26 @@ def main() -> None:
     for cfg_name, cfg in LGB_CONFIGS.items():
         models.append((f"lightgbm_{cfg_name}", (lambda c=cfg: make_lightgbm(c)), True))
 
+    metrics = ("auc", "ap", "brier", "f1")
     for name, build, is_lgb in models:
-        folds = loocv(df, build, is_lgb, features)
-        aucs = [f["auc"] for f in folds]
-        mean_auc = float(np.mean(aucs))
-        std_auc = float(np.std(aucs))
-        print(f"{name:22s} → {len(folds)} folds, AUC {mean_auc:.3f} ± {std_auc:.3f}")
+        folds, cm = loocv(df, build, is_lgb, features)
+        means = {m: float(np.mean([f[m] for f in folds])) for m in metrics}
+        stds = {m: float(np.std([f[m] for f in folds])) for m in metrics}
+        print(
+            f"{name:22s} → {len(folds)} folds | AUC {means['auc']:.3f}±{stds['auc']:.3f} | "
+            f"AP {means['ap']:.3f} | Brier {means['brier']:.3f} | F1 {means['f1']:.3f}"
+        )
+        print(f"{'':22s}   confusion cumulée [[TN FP] [FN TP]] = {cm.tolist()}")
 
         with mlflow.start_run(run_name=f"cv_{args.species}_{args.feature_set}_{name}"):
             mlflow.log_params({"species": args.species, "model": name, "feature_set": args.feature_set})
-            mlflow.log_metrics({"mean_auc": mean_auc, "std_auc": std_auc})
-            mlflow.log_dict({"folds": folds}, "folds.json")
+            mlflow.log_metrics({
+                "mean_auc": means["auc"], "std_auc": stds["auc"],
+                "mean_ap": means["ap"],
+                "mean_brier": means["brier"],
+                "mean_f1": means["f1"],
+            })
+            mlflow.log_dict({"folds": folds, "confusion_matrix": cm.tolist()}, "folds.json")
 
 
 if __name__ == "__main__":

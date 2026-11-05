@@ -203,4 +203,5 @@ c'est aujourd'hui le principal verrou, borné par la précision des coordonnées
 **Renvois** : [glossaire](glossaire.md) · [architecture](architecture.md) ·
 [feature engineering](feature-engineering.md) · [partie 1](partie-1-prediction-pousse.md) ·
 [partie 2](partie-2-reconnaissance-image.md) · [partie 3](partie-3-api-carte.md) ·
-[ajout d'espèces & calibration](ajout-especes-calibration.md)
+[ajout d'espèces & calibration](ajout-especes-calibration.md) ·
+[évaluation & calibration](evaluation-calibration.md)

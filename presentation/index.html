@@ -303,6 +303,30 @@
     <div class="notes">L'AUC par espèce évite qu'une espèce facile gonfle une moyenne globale. La LOOCV par année écarte toute fuite temporelle (le jour J et J+1 sont très corrélés). Le spread 0,72–0,89 reflète la difficulté du signal : girolle et cèpe sont plus diffus, trompette et lépiote plus nettement saisonnées.</div>
   </section>
 
+  <!-- Calibration des modèles de pousse -->
+  <section class="slide">
+    <h2>Calibration des modèles de pousse</h2>
+    <p>LightGBM sort des <strong>scores</strong>, pas des probabilités fiables : <span class="danger">Brier ≈ 0,20</span> en LOOCV → une carte 0→1 serait trompeuse.</p>
+    <div class="cols">
+      <div class="col">
+        <h3>Pourquoi calibrer</h3>
+        <ul>
+          <li>Données déséquilibrées (présences minoritaires) → LightGBM sur/sous-confiant.</li>
+          <li>La carte affiche des probabilités : elles doivent être <strong>fiables</strong>.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Comment</h3>
+        <ul>
+          <li><strong>Platt scaling</strong> : on apprend une sigmoïde σ(a·score + b) sur des prédictions hors-fold.</li>
+          <li><code>CalibratedClassifierCV(cv=5)</code> — même idée que le <em>temperature scaling</em> de la partie vision.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted">→ Les 8 modèles finaux sont calibrés ; la carte affiche des probabilités redressées.</p>
+    <div class="notes">Comment on calibre : CalibratedClassifierCV(cv=5) découpe en 5 folds — pour chaque fold, un LightGBM est entraîné sur les 4 autres, puis une sigmoïde de Platt σ(a·score+b) est ajustée sur les scores hors-fold ; à la prédiction, on moyenne les 5 probabilités calibrées. Pourquoi cv=5 plutôt qu'un split 85/15 : aucune donnée perdue (chaque point sert à l'entraînement ET à la calibration), ensemble plus robuste. Point clé : Platt est monotone → l'AUC et l'AP ne changent pas, seule la valeur des probabilités est redressée. Brier = erreur quadratique moyenne (0 = parfait, 0,25 = aléatoire) ; ~0,20 sur le modèle brut justifiait la correction.</div>
+  </section>
+
   <!-- 8. Ablation -->
   <section class="slide">
     <h2>Ablation : 1 modèle vs N modèles</h2>
